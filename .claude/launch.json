@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "na-zdravje",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5544"],
+      "port": 5544
+    }
+  ]
+}
