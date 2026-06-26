@@ -41,7 +41,7 @@ export function HomeScreen(ctx) {
     <section class="screen center-col">
       <div class="grow"></div>
       <div class="stack" style="align-items:center;gap:6px">
-        <div class="logo">Na Zdravje!<span class="cheer">🍻 pivska igra 🍻</span></div>
+        <div class="logo">NA ZDRAVJE!<span class="cheer">🍻 pivska igra 🍻</span></div>
         <p class="subtitle">Ena naprava • 2–10 igralcev<br>Vrtite telefon in se zabavajte.</p>
       </div>
       <div class="grow"></div>
