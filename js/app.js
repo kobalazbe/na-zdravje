@@ -13,11 +13,18 @@ import * as entitlement from "./entitlement.js";
 import { track } from "./analytics.js";
 import {
   HomeScreen, SetupScreen, ModeScreen, GameScreen, SummaryScreen,
-  AdultGateModal, QuitModal, HowToModal, PaywallModal,
+  AdultGateModal, QuitModal, HowToModal, PaywallModal, LoginScreen,
+  CustomCardsScreen,
 } from "./screens.js";
+import {
+  getSession, getProfile, signIn, signUp, signOut as authSignOutFn,
+  resetPassword, updatePassword, supabase,
+  getCustomCards, addCustomCard, deleteCustomCard,
+} from "./auth.js";
 
 const root = document.getElementById("app");
 let modalNode = null;
+let _tiltCleanup = null;
 
 const SCREENS = {
   home: HomeScreen,
@@ -25,6 +32,7 @@ const SCREENS = {
   mode: ModeScreen,
   game: GameScreen,
   summary: SummaryScreen,
+  customCards: CustomCardsScreen,
 };
 
 /* shared controller passed to every screen */
@@ -33,6 +41,7 @@ const ctx = {
   save,
   audio,
   confetti,
+  currentUser: null,
 
   // navigation
   go(screen) {
@@ -61,13 +70,20 @@ const ctx = {
   drawCard() { return drawCard(state); },
 
   // game lifecycle
-  startGame() {
+  async startGame() {
     resetRound();
+    // Prefetch custom cards for premium users (mode+difficulty specific)
+    if (entitlement.isPremium() && ctx.currentUser) {
+      const { data } = await getCustomCards(ctx.currentUser.id, state.mode, state.difficulty);
+      state.customCards = data || [];
+    } else {
+      state.customCards = [];
+    }
     state.deck = buildDeck(state.mode, state.difficulty, state.includeDrinks);
     state.current = null;
     drawCard(state);
     closeModal();
-    this.go("game");
+    showClinkAnimation(() => ctx.go("game"));
   },
   playAgain() {
     resetRound();
@@ -88,23 +104,45 @@ const ctx = {
     if (p && p.sips > 0 && p.sips % 10 === 0) confetti.burst(40, 0.4);
   },
 
+  // ---- auth ----
+  authSignIn: signIn,
+  authSignUp: signUp,
+  authResetPassword: resetPassword,
+  authUpdatePassword: updatePassword,
+
+  async onAuthSuccess(session) {
+    if (!session) session = await getSession();
+    if (!session) { showLogin(); return; }
+    ctx.currentUser = session.user;
+    const { data: profile } = await getProfile(session.user.id);
+    if (profile) entitlement.setFromProfile(profile);
+    sanitizeStart();
+    render();
+  },
+
+  async signOut() {
+    await authSignOutFn();
+    ctx.currentUser = null;
+    entitlement.reset();
+    resetAll();
+    showLogin();
+  },
+
   // ---- monetization ----
   isPremium: entitlement.isPremium,
   getTier: entitlement.getTier,
   passHoursLeft: entitlement.passHoursLeft,
   track,
 
-  showPaywall(source = "generic") {
+  showPaywall(source = "generic", onDismiss) {
     track("paywall_view", { source });
-    openModal((c) => PaywallModal(c, source));
+    openModal((c) => PaywallModal(c, source, onDismiss));
   },
-  // Phase 0: no live checkout yet → open Stripe Payment Link if set, else
-  // steer the user to the redeem-code field. Phase 1 swaps in api/create-checkout.
   startCheckout(tier) {
     track("checkout_start", { tier });
     const plan = PRICING.find((p) => p.id === tier);
     if (plan && plan.link) { window.open(plan.link, "_blank", "noopener"); return true; }
-    return false; // caller shows the "vnesi kodo" hint
+    return false;
   },
   redeemCode(code) {
     const r = entitlement.redeem(code);
@@ -114,6 +152,21 @@ const ctx = {
   },
   async refreshEntitlement() { return entitlement.refresh(); },
 
+  // ---- custom cards ----
+  getCustomCards(mode, difficulty) {
+    if (!ctx.currentUser) return Promise.resolve({ data: [], error: null });
+    return getCustomCards(ctx.currentUser.id, mode, difficulty);
+  },
+  addCustomCard(card) {
+    if (!ctx.currentUser) return Promise.resolve({ data: null, error: { message: "Not logged in" } });
+    return addCustomCard(ctx.currentUser.id, card);
+  },
+  deleteCustomCard(id) { return deleteCustomCard(id); },
+  manageCustomCards() { ctx.go("customCards"); },
+
+  // ---- tilt sensor cleanup (called on each render to kill old listeners) ----
+  setTiltCleanup(fn) { _tiltCleanup = fn; },
+
   // modals
   showAdultGate() { openModal(AdultGateModal); },
   confirmQuit() { openModal(QuitModal); },
@@ -122,10 +175,17 @@ const ctx = {
 };
 
 function render() {
-  // wipe + render current screen
+  if (_tiltCleanup) { _tiltCleanup(); _tiltCleanup = null; }
   const builder = SCREENS[state.screen] || HomeScreen;
   root.innerHTML = "";
   root.appendChild(builder(ctx));
+  window.scrollTo(0, 0);
+}
+
+function showLogin() {
+  closeModal();
+  root.innerHTML = "";
+  root.appendChild(LoginScreen(ctx));
   window.scrollTo(0, 0);
 }
 
@@ -133,7 +193,6 @@ function openModal(builder) {
   closeModal();
   modalNode = builder(ctx);
   document.body.appendChild(modalNode);
-  // tap on backdrop (outside .modal) closes, except the adult gate
   modalNode.addEventListener("click", (e) => {
     if (e.target === modalNode && builder !== AdultGateModal) closeModal();
   });
@@ -144,18 +203,54 @@ function closeModal() {
   modalNode = null;
 }
 
-/* ---- resilience: if a saved game points at a screen needing data we
-   no longer have, fall back gracefully ---- */
+/* Beer-clink start animation — runs over the top, then calls cb. */
+function showClinkAnimation(cb) {
+  const ov = document.createElement("div");
+  ov.className = "clink-overlay";
+  ov.innerHTML = `
+    <div class="clink-mugs"><span class="clink-l">🍺</span><span class="clink-r">🍺</span></div>
+    <div class="clink-label">Na zdravje! 🎉</div>
+  `;
+  document.body.appendChild(ov);
+  setTimeout(() => {
+    ov.classList.add("clink-out");
+    setTimeout(() => { if (ov.parentNode) ov.remove(); cb(); }, 340);
+  }, 940);
+}
+
 function sanitizeStart() {
   if (state.screen === "game" && (!state.players.length || !state.current)) {
     state.screen = state.players.length ? "mode" : "home";
   }
   if (state.screen === "summary" && !state.players.length) state.screen = "home";
+  if (state.screen === "customCards" && !entitlement.isPremium()) state.screen = "home";
 }
 
-sanitizeStart();
-render();
+/* ---- boot: check session first, then render ---- */
+async function boot() {
+  if (window.location.hash.includes("type=recovery")) {
+    history.replaceState(null, "", window.location.pathname);
+    await getSession();
+    root.innerHTML = "";
+    root.appendChild(LoginScreen(ctx, "reset"));
+    return;
+  }
 
-// re-validate entitlement on boot (Phase 0: just expires a stale pass),
-// then repaint so any change in premium status is reflected immediately.
-entitlement.refresh().then((tier) => { if (tier) render(); });
+  const session = await getSession();
+
+  if (!session) {
+    showLogin();
+    return;
+  }
+
+  ctx.currentUser = session.user;
+  const { data: profile } = await getProfile(session.user.id);
+  if (profile) entitlement.setFromProfile(profile);
+
+  sanitizeStart();
+  render();
+
+  entitlement.refresh();
+}
+
+boot();

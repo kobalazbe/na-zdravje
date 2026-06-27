@@ -111,3 +111,12 @@ export function devSetTier(tier) {
 }
 
 export function reset() { ent = fresh(); persist(); }
+
+/* Sync tier from a Supabase profiles row (called after login). */
+export function setFromProfile(profile) {
+  if (!profile) return;
+  ent.tier = profile.tier || "free";
+  ent.passExpiry = profile.pass_expiry ? new Date(profile.pass_expiry).getTime() : null;
+  ent.validatedAt = Date.now();
+  persist();
+}

@@ -36,9 +36,11 @@ export function HomeScreen(ctx) {
     ? (hrs ? `<span class="super-badge">🎟️ Žur Pass aktiven · še ${hrs} h</span>`
            : `<span class="super-badge">👑 Premium aktiven</span>`)
     : `<button class="btn btn-ghost" data-act="premium">👑 Odkleni Premium</button>`;
+  const userEmail = ctx.currentUser?.email || "";
 
   const node = el(`
     <section class="screen center-col">
+      ${userEmail ? `<div class="user-row"><span>👤 ${esc(userEmail)}</span><button class="btn-logout" data-act="logout">Odjava</button></div>` : ""}
       <div class="grow"></div>
       <div class="stack" style="align-items:center;gap:6px">
         <div class="logo">NA ZDRAVJE!<span class="cheer">🍻 pivska igra 🍻</span></div>
@@ -48,6 +50,7 @@ export function HomeScreen(ctx) {
       <div class="stack" style="width:100%">
         <button class="btn btn-lg" data-act="start">Začni igro 🎲</button>
         <button class="btn btn-ghost" data-act="how">Kako se igra?</button>
+        ${premium ? `<button class="btn btn-ghost" data-act="cards">🃏 Moje kartice</button>` : ""}
         <div class="text-center" style="margin-top:6px">${premiumLine}</div>
       </div>
       <p class="hint" style="margin-top:18px">Pij odgovorno. Igra je namenjena odraslim. 🔞</p>
@@ -57,6 +60,10 @@ export function HomeScreen(ctx) {
   node.querySelector('[data-act="how"]').onclick = () => { ctx.audio.pop(); ctx.showHowTo(); };
   const premBtn = node.querySelector('[data-act="premium"]');
   if (premBtn) premBtn.onclick = () => { ctx.audio.pop(); ctx.showPaywall("home"); };
+  const logoutBtn = node.querySelector('[data-act="logout"]');
+  if (logoutBtn) logoutBtn.onclick = () => ctx.signOut();
+  const cardsBtn = node.querySelector('[data-act="cards"]');
+  if (cardsBtn) cardsBtn.onclick = () => { ctx.audio.pop(); ctx.manageCustomCards(); };
   return node;
 }
 
@@ -162,6 +169,7 @@ export function ModeScreen(ctx) {
 
       <div class="pushed-bottom stack" style="padding-top:20px">
         <button class="btn btn-lg" data-act="play" id="playBtn">Igraj! 🚀</button>
+        <div id="tiltArea"></div>
       </div>
     </section>
   `);
@@ -214,16 +222,71 @@ export function ModeScreen(ctx) {
     state.includeDrinks = e.target.checked; ctx.save();
   };
   node.querySelector('[data-act="back"]').onclick = () => { ctx.audio.pop(); ctx.go("setup"); };
-  node.querySelector('[data-act="play"]').onclick = () => {
-    ctx.audio.pop();
-    if (isLocked(MODES[state.mode])) {     // guard: locked mode can't start
+
+  function triggerPlay() {
+    if (isLocked(MODES[state.mode])) {
       ctx.showPaywall("mode_lock");
     } else if (MODES[state.mode].adult && !state.adultConfirmed) {
       ctx.showAdultGate();
     } else {
+      ctx.audio.pop();
       ctx.startGame();
     }
-  };
+  }
+
+  node.querySelector('[data-act="play"]').onclick = triggerPlay;
+
+  // ---- tilt-to-start ----
+  const tiltArea = node.querySelector("#tiltArea");
+  if (typeof DeviceOrientationEvent !== "undefined") {
+    const needsPermission = typeof DeviceOrientationEvent.requestPermission === "function";
+    if (needsPermission) {
+      // iOS 13+ requires a user gesture to grant motion permission
+      const permBtn = document.createElement("button");
+      permBtn.className = "btn-tilt-perm";
+      permBtn.textContent = "🍺 Aktiviraj nagib za start";
+      tiltArea.appendChild(permBtn);
+      permBtn.onclick = async () => {
+        try {
+          const perm = await DeviceOrientationEvent.requestPermission();
+          if (perm === "granted") {
+            permBtn.remove();
+            activateTilt();
+          }
+        } catch (_) {}
+      };
+    } else {
+      // Android / desktop — no permission needed
+      const hint = document.createElement("p");
+      hint.className = "tilt-hint";
+      hint.textContent = "🍺 ali nagni telefon za start";
+      tiltArea.appendChild(hint);
+      activateTilt();
+    }
+  }
+
+  function activateTilt() {
+    let tiltTimer = null;
+    const handler = (e) => {
+      // beta: 90 = phone upright, 0 = flat, <20 = tilted forward (drinking)
+      const tilted = e.beta !== null && e.beta < 22;
+      if (tilted && !tiltTimer) {
+        tiltTimer = setTimeout(() => {
+          tiltTimer = null;
+          if (state.screen !== "mode") return;
+          triggerPlay();
+        }, 550);
+      } else if (!tilted && tiltTimer) {
+        clearTimeout(tiltTimer);
+        tiltTimer = null;
+      }
+    };
+    window.addEventListener("deviceorientation", handler);
+    ctx.setTiltCleanup(() => {
+      window.removeEventListener("deviceorientation", handler);
+      if (tiltTimer) { clearTimeout(tiltTimer); tiltTimer = null; }
+    });
+  }
 
   renderModes();
   renderDiffs();
@@ -281,6 +344,8 @@ export function GameScreen(ctx) {
         <div class="card-text blurred">${esc(c.text)}</div>
         <span class="sips-badge">👑 Samo za Premium</span>
       `;
+      // Auto-open paywall; dismissing without buying auto-advances to next player
+      setTimeout(() => ctx.showPaywall("teaser_card", advance), 350);
     } else {
       cardEl.classList.remove("teaser");
       const t = CARD_TYPES[c.type];
@@ -323,10 +388,10 @@ export function GameScreen(ctx) {
       actions.innerHTML = `
         <div class="btn-row">
           <button class="btn" data-act="unlock">Odkleni Premium 👑</button>
-          <button class="btn btn-ghost" data-act="skipteaser">Naprej →</button>
         </div>`;
-      actions.querySelector('[data-act="unlock"]').onclick = () => { ctx.audio.pop(); ctx.showPaywall("teaser_card"); };
-      actions.querySelector('[data-act="skipteaser"]').onclick = () => { ctx.audio.pop(); advance(); };
+      actions.querySelector('[data-act="unlock"]').onclick = () => {
+        ctx.audio.pop(); ctx.showPaywall("teaser_card", advance);
+      };
       return;
     }
     if (c.type === "izziv") {
@@ -343,7 +408,8 @@ export function GameScreen(ctx) {
     } else if (c.type === "pijaca") {
       const n = c.sips || 1;
       actions.innerHTML = `<button class="btn" data-act="drank">Na ex! 🍺 (${n})</button>`;
-      actions.querySelector('[data-act="drank"]').onclick = () => {
+      actions.querySelector('[data-act="drank"]').onclick = (e) => {
+        spawnDrinkFloat(e.currentTarget, n);
         ctx.audio.drink(); p.sips += n; ctx.bumpScore(); advance();
       };
     } else {
@@ -361,6 +427,42 @@ export function GameScreen(ctx) {
         <span class="sips">🍺${pl.sips}</span>
       </div>
     `).join("");
+  }
+
+  function spawnDrinkFloat(_btn, sips) {
+    const ov = document.createElement("div");
+    ov.className = "drink-overlay";
+
+    // foam bubbles
+    for (let i = 0; i < 8; i++) {
+      const b = document.createElement("span");
+      b.className = "drink-bubble";
+      const size = 7 + Math.random() * 20;
+      b.style.cssText = `width:${size}px;height:${size}px;` +
+        `left:${18 + Math.random() * 64}%;bottom:${15 + Math.random() * 45}%;` +
+        `--b-dur:${(.45 + Math.random() * .45).toFixed(2)}s;` +
+        `--b-del:${(Math.random() * .28).toFixed(2)}s`;
+      ov.appendChild(b);
+    }
+
+    const mug = document.createElement("div");
+    mug.className = "drink-mug";
+    mug.textContent = "🍺";
+    ov.appendChild(mug);
+
+    if (sips > 0) {
+      const cnt = document.createElement("div");
+      cnt.className = "drink-count";
+      cnt.textContent = `${sips} ${sipWord(sips)}!`;
+      ov.appendChild(cnt);
+    }
+
+    document.body.appendChild(ov);
+    setTimeout(() => {
+      ov.style.transition = "opacity .28s";
+      ov.style.opacity = "0";
+      setTimeout(() => ov.remove(), 280);
+    }, 820);
   }
 
   function advance() {
@@ -399,7 +501,7 @@ export function SummaryScreen(ctx) {
 
   const medals = ["🥇", "🥈", "🥉"];
   const rows = ranked.map((p, i) => `
-    <div class="podium-row ${i === 0 ? "first" : ""}">
+    <div class="podium-row ${i === 0 ? "first" : ""}" style="animation-delay:${i * 0.11}s">
       <span class="rank">${medals[i] || (i + 1) + "."}</span>
       ${avatar(p)}
       <span class="name">${esc(p.name)}</span>
@@ -518,7 +620,7 @@ export function HowToModal(ctx) {
    PAYWALL — tiers + blurred teaser + redeem code
    (clones the modal pattern; opened via ctx.showPaywall(source))
    =========================================================== */
-export function PaywallModal(ctx, source = "generic") {
+export function PaywallModal(ctx, source = "generic", onDismiss) {
   // a real (blurred) Pikantno line to create the craving
   const peekPool = (SPICY.sredje || SPICY.lahko || []);
   const peek = peekPool.length ? peekPool[Math.floor(Math.random() * peekPool.length)].text : "";
@@ -585,7 +687,285 @@ export function PaywallModal(ctx, source = "generic") {
   }
   node.querySelector('[data-act="redeem"]').onclick = doRedeem;
   input.addEventListener("keydown", (e) => { if (e.key === "Enter") doRedeem(); });
-  node.querySelector('[data-act="close"]').onclick = () => { ctx.audio.pop(); ctx.closeModal(); };
+  node.querySelector('[data-act="close"]').onclick = () => {
+    ctx.audio.pop(); ctx.closeModal(); if (onDismiss) onDismiss();
+  };
 
+  return node;
+}
+
+/* ===========================================================
+   LOGIN / SIGNUP / FORGOT / RESET
+   =========================================================== */
+export function LoginScreen(ctx, initialMode = "login") {
+  ctx.setTheme("#ff6b6b", "#e84b4b");
+  let mode = initialMode;
+
+  const node = el(`
+    <section class="screen center-col">
+      <div class="grow"></div>
+      <div class="stack" style="align-items:center;gap:4px">
+        <div class="logo">Na Zdravje!<span class="cheer">🍻</span></div>
+        <p class="subtitle" style="text-align:center">Prijavi se in začni igrati.</p>
+      </div>
+      <div class="auth-card">
+        <h2 id="auth-title" style="font-family:var(--font-display);font-weight:800;font-size:1.5rem;text-align:center;margin-bottom:18px">Prijava</h2>
+        <div class="stack" style="gap:10px">
+          <input class="input" id="auth-email" type="email" placeholder="E-pošta" autocomplete="email" inputmode="email" />
+          <input class="input" id="auth-pass" type="password" placeholder="Geslo (min. 6 znakov)" autocomplete="current-password" />
+          <button class="btn btn-lg" id="auth-submit">Prijava</button>
+          <p id="auth-err" class="hint" style="text-align:center;min-height:18px;font-weight:600"></p>
+          <button class="btn btn-ghost" id="auth-toggle">Nimaš računa? Registracija →</button>
+          <button class="btn-forgot" id="auth-forgot">Pozabljeno geslo?</button>
+        </div>
+      </div>
+      <div class="grow"></div>
+      <p class="hint" style="text-align:center">Pij odgovorno. Igra je namenjena odraslim. 🔞</p>
+    </section>
+  `);
+
+  const titleEl  = node.querySelector("#auth-title");
+  const emailEl  = node.querySelector("#auth-email");
+  const passEl   = node.querySelector("#auth-pass");
+  const submitEl = node.querySelector("#auth-submit");
+  const errEl    = node.querySelector("#auth-err");
+  const toggleEl = node.querySelector("#auth-toggle");
+  const forgotEl = node.querySelector("#auth-forgot");
+
+  function setMode(m) {
+    mode = m;
+    errEl.textContent = "";
+    errEl.style.color = "var(--coral)";
+
+    const isForgot = m === "forgot";
+    const isReset  = m === "reset";
+
+    passEl.style.display  = (isForgot) ? "none" : "";
+    forgotEl.style.display = (isForgot || isReset) ? "none" : "";
+    toggleEl.style.display = (isForgot || isReset) ? "none" : "";
+
+    if (m === "login") {
+      titleEl.textContent  = "Prijava";
+      submitEl.textContent = "Prijava";
+      toggleEl.textContent = "Nimaš računa? Registracija →";
+      passEl.autocomplete  = "current-password";
+    } else if (m === "signup") {
+      titleEl.textContent  = "Registracija";
+      submitEl.textContent = "Ustvari račun";
+      toggleEl.textContent = "Že imaš račun? Prijava →";
+      passEl.autocomplete  = "new-password";
+    } else if (m === "forgot") {
+      titleEl.textContent  = "Ponastavi geslo";
+      submitEl.textContent = "Pošlji link →";
+      emailEl.focus();
+    } else if (m === "reset") {
+      titleEl.textContent  = "Novo geslo";
+      submitEl.textContent = "Shrani geslo";
+      passEl.placeholder   = "Novo geslo (min. 6 znakov)";
+      passEl.autocomplete  = "new-password";
+      emailEl.style.display = "none";
+    }
+  }
+
+  // apply initial mode without animation flash
+  setMode(mode);
+
+  toggleEl.onclick = () => setMode(mode === "login" ? "signup" : "login");
+  forgotEl.onclick = () => setMode("forgot");
+
+  submitEl.onclick = async () => {
+    const email = emailEl.value.trim();
+    const pass  = passEl.value;
+    errEl.textContent = "";
+    submitEl.disabled = true;
+    submitEl.textContent = "…";
+
+    if (mode === "forgot") {
+      if (!email) { errEl.textContent = "Vnesi e-pošto."; submitEl.disabled = false; submitEl.textContent = "Pošlji link →"; return; }
+      const { error } = await ctx.authResetPassword(email);
+      submitEl.disabled = false;
+      if (error) { errEl.textContent = "Napaka: " + error.message; submitEl.textContent = "Pošlji link →"; return; }
+      errEl.style.color = "#38d9a9";
+      errEl.textContent = "✅ Poslali smo ti e-pošto s povezavo za ponastavitev.";
+      submitEl.textContent = "Pošlji link →";
+      return;
+    }
+
+    if (mode === "reset") {
+      if (pass.length < 6) { errEl.textContent = "Geslo mora imeti vsaj 6 znakov."; submitEl.disabled = false; submitEl.textContent = "Shrani geslo"; return; }
+      const { error } = await ctx.authUpdatePassword(pass);
+      submitEl.disabled = false;
+      if (error) { errEl.textContent = "Napaka: " + error.message; submitEl.textContent = "Shrani geslo"; return; }
+      errEl.style.color = "#38d9a9";
+      errEl.textContent = "✅ Geslo posodobljeno!";
+      setTimeout(() => ctx.onAuthSuccess(null), 900);
+      return;
+    }
+
+    if (!email || !pass) { errEl.textContent = "Izpolni oba polji."; submitEl.disabled = false; submitEl.textContent = mode === "login" ? "Prijava" : "Ustvari račun"; return; }
+    if (pass.length < 6) { errEl.textContent = "Geslo mora imeti vsaj 6 znakov."; submitEl.disabled = false; submitEl.textContent = mode === "login" ? "Prijava" : "Ustvari račun"; return; }
+
+    const { data, error } = mode === "login"
+      ? await ctx.authSignIn(email, pass)
+      : await ctx.authSignUp(email, pass);
+
+    if (error) {
+      submitEl.disabled = false;
+      submitEl.textContent = mode === "login" ? "Prijava" : "Ustvari račun";
+      errEl.textContent = _authErr(error.message);
+      return;
+    }
+
+    if (mode === "signup" && data.user && !data.session) {
+      errEl.style.color = "#38d9a9";
+      errEl.textContent = "✅ Račun ustvarjen! Prijavi se.";
+      submitEl.disabled = false;
+      submitEl.textContent = "Ustvari račun";
+      setMode("login");
+      return;
+    }
+
+    await ctx.onAuthSuccess(data.session);
+  };
+
+  node.addEventListener("keydown", (e) => { if (e.key === "Enter") submitEl.click(); });
+
+  return node;
+}
+
+function _authErr(msg) {
+  if (msg.includes("Invalid login") || msg.includes("invalid_credentials")) return "Napačen e-naslov ali geslo.";
+  if (msg.includes("already registered") || msg.includes("already been registered")) return "Ta e-pošta je že registrirana.";
+  if (msg.includes("Email not confirmed")) return "Najprej potrdi svojo e-pošto.";
+  if (msg.includes("Password")) return "Geslo mora imeti vsaj 6 znakov.";
+  return "Napaka: " + msg;
+}
+
+/* ===========================================================
+   CUSTOM CARDS — premium screen for managing personal cards
+   Cards are scoped to the currently selected mode + difficulty.
+   =========================================================== */
+export function CustomCardsScreen(ctx) {
+  ctx.setTheme("#ff6b6b", "#e84b4b");
+  const { state } = ctx;
+  const modeName  = MODES[state.mode]?.name || "Klasično";
+  const diffName  = DIFFICULTIES[state.difficulty]?.name || "Lahko";
+
+  const CARD_TYPE_OPTIONS = [
+    { id: "izziv",     label: "🎯 Izziv" },
+    { id: "vprasanje", label: "💬 Vprašanje" },
+    { id: "skupinski", label: "👥 Skupinsko" },
+    { id: "pijaca",    label: "🍺 Pij" },
+  ];
+  let selectedType = "izziv";
+
+  const node = el(`
+    <section class="screen">
+      <div class="topbar">
+        <button class="btn icon-btn btn-ghost" data-act="back">←</button>
+        <h2 class="section-title">Moje kartice</h2>
+      </div>
+      <p class="hint" style="text-align:center;margin:2px 0 14px">
+        ${esc(modeName)} · ${esc(diffName)}
+      </p>
+
+      <div class="cc-add-form">
+        <p style="font-weight:700;margin-bottom:8px">Dodaj novo kartico</p>
+        <textarea class="input" id="cc-text" rows="3"
+          placeholder="Besedilo kartice…" style="resize:none;padding-top:10px"></textarea>
+        <div class="cc-type-row" id="cc-types"></div>
+        <div id="cc-sips-wrap" style="margin-top:8px;display:none">
+          <input class="input" id="cc-sips" type="number" min="1" max="20"
+            placeholder="Število požirkov (neobvezno)" />
+        </div>
+        <button class="btn" id="cc-add-btn" style="width:100%;margin-top:10px">Dodaj ＋</button>
+        <p class="hint" id="cc-msg" style="text-align:center;min-height:18px;margin-top:6px"></p>
+      </div>
+
+      <p class="section-title" style="font-size:1.1rem;margin-bottom:10px">Shranjene kartice</p>
+      <div id="cc-list"><p class="hint" style="text-align:center">Nalagam…</p></div>
+    </section>
+  `);
+
+  // ---- type selector ----
+  const typesEl = node.querySelector("#cc-types");
+  const sipsWrap = node.querySelector("#cc-sips-wrap");
+
+  function renderTypes() {
+    typesEl.innerHTML = CARD_TYPE_OPTIONS.map((t) =>
+      `<button class="cc-type-btn ${t.id === selectedType ? "selected" : ""}" data-type="${t.id}">${t.label}</button>`
+    ).join("");
+    typesEl.querySelectorAll("[data-type]").forEach((b) => {
+      b.onclick = () => {
+        selectedType = b.dataset.type;
+        renderTypes();
+        sipsWrap.style.display = (selectedType === "pijaca" || selectedType === "izziv") ? "" : "none";
+      };
+    });
+  }
+  renderTypes();
+  // show sips for the default type (izziv)
+  sipsWrap.style.display = "";
+
+  // ---- card list ----
+  const ccList = node.querySelector("#cc-list");
+  const msgEl  = node.querySelector("#cc-msg");
+  const textEl = node.querySelector("#cc-text");
+  const sipsEl = node.querySelector("#cc-sips");
+
+  async function loadCards() {
+    ccList.innerHTML = `<p class="hint" style="text-align:center">Nalagam…</p>`;
+    const { data, error } = await ctx.getCustomCards(state.mode, state.difficulty);
+    if (error || !data || !data.length) {
+      ccList.innerHTML = `<p class="hint" style="text-align:center">Ni kartic. Ustvari svojo! 🃏</p>`;
+      return;
+    }
+    ccList.innerHTML = data.map((c) => {
+      const t = CARD_TYPES[c.type];
+      const sipsStr = c.sips ? ` · ${c.sips} ${c.sips === 1 ? "požirek" : "požirkov"}` : "";
+      return `
+        <div class="custom-card-item">
+          <div style="flex:1">
+            <div class="cc-text">${esc(c.text)}</div>
+            <div class="cc-meta">${t ? t.emoji + " " + t.label : c.type}${sipsStr}</div>
+          </div>
+          <button class="cc-del" data-del="${esc(c.id)}" aria-label="Izbriši">🗑</button>
+        </div>
+      `;
+    }).join("");
+
+    ccList.querySelectorAll("[data-del]").forEach((b) => {
+      b.onclick = async () => {
+        b.disabled = true;
+        await ctx.deleteCustomCard(b.dataset.del);
+        loadCards();
+      };
+    });
+  }
+
+  node.querySelector("#cc-add-btn").onclick = async () => {
+    const text = textEl.value.trim();
+    if (!text) { msgEl.textContent = "Vnesi besedilo kartice."; msgEl.style.color = ""; return; }
+    const sipsVal = parseInt(sipsEl.value);
+    const sips = (selectedType === "pijaca" || selectedType === "izziv") && sipsVal > 0 ? sipsVal : null;
+    const { error } = await ctx.addCustomCard({
+      text,
+      type: selectedType,
+      sips,
+      mode: state.mode,
+      difficulty: state.difficulty,
+    });
+    if (error) { msgEl.textContent = "Napaka: " + error.message; return; }
+    msgEl.style.color = "#38d9a9";
+    msgEl.textContent = "✅ Kartica dodana!";
+    textEl.value = "";
+    sipsEl.value = "";
+    setTimeout(() => { msgEl.textContent = ""; msgEl.style.color = ""; }, 2200);
+    loadCards();
+  };
+
+  node.querySelector('[data-act="back"]').onclick = () => { ctx.audio.pop(); ctx.go("home"); };
+
+  loadCards();
   return node;
 }

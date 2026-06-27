@@ -5,7 +5,7 @@
 
 import { CLASSIC } from "./data/cards.classic.js";
 import { SPICY } from "./data/cards.spicy.js";
-import { FREE_LIMITS, FREE_TEASER_EVERY } from "./state.js";
+import { FREE_LIMITS, FREE_TEASER_EVERY, state } from "./state.js";
 import { isPremium } from "./entitlement.js";
 
 const LIBRARY = { classic: CLASSIC, spicy: SPICY };
@@ -36,6 +36,9 @@ export function buildDeck(mode, difficulty, includeDrinks = true) {
   if (!isPremium()) {
     const cap = FREE_LIMITS[mode]?.[difficulty] ?? 0;
     cards = shuffle(cards).slice(0, cap); // sample the cap, then we re-shuffle below
+  } else if (state.customCards?.length) {
+    const customs = state.customCards.filter((c) => includeDrinks || c.type !== "pijaca");
+    cards = cards.concat(customs);
   }
   return shuffle(cards);
 }
