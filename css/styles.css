@@ -332,20 +332,6 @@ body {
   font-size: 1rem;
   color: rgba(255,255,255,.85);
 }
-.cb-or { font-size: .85rem; color: rgba(255,255,255,.45); }
-#shakePermBtn {
-  background: rgba(255,255,255,.15);
-  border: 1.5px solid rgba(255,255,255,.3);
-  border-radius: 999px;
-  color: white;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: .9rem;
-  padding: 8px 20px;
-  cursor: pointer;
-  margin-top: 4px;
-}
-
 .card .type-tag {
   align-self: flex-start;
   background: rgba(255,255,255,.25);
@@ -431,12 +417,6 @@ body {
 .podium-row .name { flex: 1; font-weight: 700; font-size: 1.1rem; }
 .podium-row .stat { color: var(--ink-soft); font-weight: 600; }
 .podium-row.first { background: linear-gradient(120deg, #fff5cc, #ffe6a0); }
-
-.super-badge {
-  display: inline-block; background: var(--grape); color: #fff;
-  border-radius: 999px; padding: 4px 12px; font-size: .82rem; font-weight: 600;
-  margin-top: 6px;
-}
 
 /* ===========================================================
    Confetti canvas

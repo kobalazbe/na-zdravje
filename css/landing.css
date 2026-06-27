@@ -925,33 +925,6 @@ body {
   animation: screen-in .55s cubic-bezier(.2,.9,.3,1.2) both;
 }
 
-/* ---- live badge ---- */
-@keyframes live-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: .4; transform: scale(.65); }
-}
-.hero-live {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(56,217,169,.1);
-  border: 1.5px solid rgba(56,217,169,.35);
-  border-radius: 999px;
-  padding: 7px 16px;
-  font-size: .84rem;
-  font-weight: 600;
-  color: #1ab588;
-  margin-bottom: 14px;
-  animation: screen-in .4s .05s both;
-}
-.live-dot {
-  width: 8px; height: 8px;
-  background: #38d9a9;
-  border-radius: 50%;
-  flex-shrink: 0;
-  animation: live-pulse 1.6s ease-in-out infinite;
-}
-
 /* ---- floating background emojis ---- */
 @keyframes float-emoji {
   0%, 100% { transform: translateY(0) rotate(0deg); }
