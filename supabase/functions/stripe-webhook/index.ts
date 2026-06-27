@@ -1,34 +1,27 @@
 // Supabase Edge Function — Stripe webhook handler
-// Listens for checkout.session.completed and subscription events,
-// then updates the matching user's profiles.tier in the database.
+// Manually verifies Stripe signatures using Web Crypto API (no Stripe SDK).
 //
-// Required env vars (set in Supabase Dashboard → Settings → Edge Functions):
+// Required env vars (Supabase Dashboard → Settings → Edge Functions → Secrets):
 //   STRIPE_SECRET_KEY       — sk_test_... or sk_live_...
 //   STRIPE_WEBHOOK_SECRET   — whsec_... (from Stripe → Webhooks → signing secret)
-//   SUPABASE_SERVICE_ROLE_KEY — from Supabase → Settings → API (service_role key)
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import Stripe from "https://esm.sh/stripe@14?target=deno";
-
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
-  apiVersion: "2024-04-10",
-  httpClient: Stripe.createFetchHttpClient(),
-});
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
-// Map Stripe tier metadata → profiles.tier value
+const STRIPE_API = "https://api.stripe.com/v1";
+const STRIPE_KEY = Deno.env.get("STRIPE_SECRET_KEY")!;
+
 const TIER_MAP: Record<string, string> = {
   pass:    "pass",
   monthly: "premium",
   yearly:  "premium",
 };
 
-// How long a Žur Pass lasts (48 h in ms)
 const PASS_DURATION_MS = 48 * 60 * 60 * 1000;
 
 serve(async (req) => {
@@ -39,13 +32,9 @@ serve(async (req) => {
   const body = await req.text();
   const sig  = req.headers.get("stripe-signature") ?? "";
 
-  let event: Stripe.Event;
+  let event: Record<string, unknown>;
   try {
-    event = await stripe.webhooks.constructEventAsync(
-      body,
-      sig,
-      Deno.env.get("STRIPE_WEBHOOK_SECRET")!
-    );
+    event = await verifyStripeSignature(body, sig, Deno.env.get("STRIPE_WEBHOOK_SECRET")!);
   } catch (err) {
     console.error("Webhook signature verification failed:", err);
     return new Response(`Webhook Error: ${err}`, { status: 400 });
@@ -53,22 +42,25 @@ serve(async (req) => {
 
   try {
     if (event.type === "checkout.session.completed") {
-      const session = event.data.object as Stripe.Checkout.Session;
-      const email   = session.customer_details?.email ?? session.customer_email;
-      const tier    = session.metadata?.tier ?? "monthly";
+      const session = event.data as Record<string, unknown>;
+      const obj     = session.object as Record<string, unknown>;
+      const details = obj.customer_details as Record<string, string> | null;
+      const email   = details?.email ?? (obj.customer_email as string | null);
+      const meta    = obj.metadata as Record<string, string> | null;
+      const tier    = meta?.tier ?? "monthly";
 
       if (!email) {
-        console.warn("No email on session:", session.id);
+        console.warn("No email on session:", obj.id);
         return new Response("OK", { status: 200 });
       }
 
-      await grantTier(email, tier, session.subscription as string | null);
+      await grantTier(email, tier, obj.subscription as string | null);
     }
 
     if (event.type === "customer.subscription.deleted") {
-      const sub      = event.data.object as Stripe.Subscription;
-      const customer = await stripe.customers.retrieve(sub.customer as string) as Stripe.Customer;
-      const email    = customer.email;
+      const sub      = (event.data as Record<string, unknown>).object as Record<string, unknown>;
+      const customer = await stripeGet(`/customers/${sub.customer}`);
+      const email    = customer.email as string | null;
       if (email) await revokeToFree(email);
     }
 
@@ -76,12 +68,11 @@ serve(async (req) => {
       event.type === "customer.subscription.updated" ||
       event.type === "customer.subscription.created"
     ) {
-      const sub      = event.data.object as Stripe.Subscription;
-      const customer = await stripe.customers.retrieve(sub.customer as string) as Stripe.Customer;
-      const email    = customer.email;
-      // Re-activate if coming out of past_due / canceled
+      const sub      = (event.data as Record<string, unknown>).object as Record<string, unknown>;
+      const customer = await stripeGet(`/customers/${sub.customer}`);
+      const email    = customer.email as string | null;
       if (email && sub.status === "active") {
-        await grantTier(email, "monthly", sub.id);
+        await grantTier(email, "monthly", sub.id as string);
       }
     }
   } catch (err) {
@@ -92,8 +83,55 @@ serve(async (req) => {
   return new Response("OK", { status: 200 });
 });
 
+/* ---- Stripe signature verification (Web Crypto, no SDK) ---- */
+async function verifyStripeSignature(
+  body: string,
+  sig: string,
+  secret: string
+): Promise<Record<string, unknown>> {
+  let timestamp = "";
+  const signatures: string[] = [];
+  for (const part of sig.split(",")) {
+    const eq = part.indexOf("=");
+    const k  = part.slice(0, eq);
+    const v  = part.slice(eq + 1);
+    if (k === "t")  timestamp = v;
+    if (k === "v1") signatures.push(v);
+  }
+  if (!timestamp || signatures.length === 0) {
+    throw new Error("Invalid Stripe-Signature header");
+  }
+
+  const enc     = new TextEncoder();
+  const rawKey  = enc.encode(secret.trim());
+  const payload = enc.encode(`${timestamp}.${body}`);
+  const key     = await crypto.subtle.importKey("raw", rawKey, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const mac     = await crypto.subtle.sign("HMAC", key, payload);
+  const expected = Array.from(new Uint8Array(mac)).map(b => b.toString(16).padStart(2, "0")).join("");
+
+  if (!signatures.includes(expected)) {
+    throw new Error("No signatures found matching the expected signature for payload.");
+  }
+
+  const tolerance = 300; // 5 minutes
+  if (Math.abs(Date.now() / 1000 - parseInt(timestamp)) > tolerance) {
+    throw new Error("Timestamp outside the tolerance zone.");
+  }
+
+  return JSON.parse(body) as Record<string, unknown>;
+}
+
+/* ---- Minimal Stripe REST helper ---- */
+async function stripeGet(path: string): Promise<Record<string, unknown>> {
+  const res = await fetch(`${STRIPE_API}${path}`, {
+    headers: { Authorization: `Bearer ${STRIPE_KEY}` },
+  });
+  if (!res.ok) throw new Error(`Stripe GET ${path} → ${res.status}`);
+  return res.json();
+}
+
+/* ---- Supabase helpers ---- */
 async function getUserByEmail(email: string) {
-  // Look up the Supabase user id by email via the admin API
   const { data, error } = await supabase.auth.admin.listUsers();
   if (error) throw error;
   return data.users.find((u) => u.email === email) ?? null;
@@ -113,11 +151,7 @@ async function grantTier(email: string, stripeTier: string, subscriptionId: stri
 
   const { error } = await supabase
     .from("profiles")
-    .update({
-      tier,
-      pass_expiry: passExpiry,
-      stripe_customer_id: subscriptionId,
-    })
+    .update({ tier, pass_expiry: passExpiry, stripe_customer_id: subscriptionId })
     .eq("id", user.id);
 
   if (error) throw error;
