@@ -390,8 +390,15 @@ body {
 .modal-backdrop {
   position: fixed; inset: 0; z-index: 50;
   background: rgba(43,33,64,.55);
-  display: grid; place-items: center; padding: 24px;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 24px 24px calc(24px + env(safe-area-inset-bottom));
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
   animation: fade .2s ease both;
+}
+@supports (align-items: center) {
+  @media (min-height: 700px) {
+    .modal-backdrop { align-items: center; }
+  }
 }
 @keyframes fade { from{opacity:0} to{opacity:1} }
 .modal {
@@ -399,6 +406,7 @@ body {
   background: var(--white); border-radius: var(--radius-lg);
   padding: 26px 22px; text-align: center;
   box-shadow: var(--shadow-soft);
+  flex-shrink: 0;
   animation: screen-in .3s cubic-bezier(.2,.9,.3,1.2) both;
 }
 .modal .big-emoji { font-size: 3.2rem; }
