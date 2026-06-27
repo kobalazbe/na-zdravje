@@ -310,6 +310,42 @@ body {
   100% { transform: rotateY(0); }
 }
 
+.card-back {
+  background: var(--grape) !important;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  cursor: pointer;
+}
+.cb-logo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.6rem;
+  color: white;
+  text-shadow: 0 3px 8px rgba(0,0,0,.25);
+  text-align: center;
+}
+.cb-body { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.cb-hint {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+  color: rgba(255,255,255,.85);
+}
+.cb-or { font-size: .85rem; color: rgba(255,255,255,.45); }
+#shakePermBtn {
+  background: rgba(255,255,255,.15);
+  border: 1.5px solid rgba(255,255,255,.3);
+  border-radius: 999px;
+  color: white;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: .9rem;
+  padding: 8px 20px;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
 .card .type-tag {
   align-self: flex-start;
   background: rgba(255,255,255,.25);
