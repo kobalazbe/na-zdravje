@@ -668,9 +668,7 @@ export function PaywallModal(ctx, source = "generic", onDismiss) {
       ctx.audio.pop();
       const opened = ctx.startCheckout(b.dataset.tier);
       if (!opened) {
-        // Phase 0: no live checkout link yet → guide to the code field
         msg.textContent = "Plačilo pride kmalu. Imaš kodo? Vnesi jo spodaj. 👇";
-        input.focus();
       }
     };
   });
