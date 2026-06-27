@@ -1,0 +1,19 @@
+{
+  "name": "Na Zdravje! — Pivska igra",
+  "short_name": "Na Zdravje!",
+  "description": "Digitalna pivska igra za 2–10 igralcev. Ena naprava, kup smeha.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fff3e0",
+  "theme_color": "#ff6b6b",
+  "lang": "sl",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='115' fill='%23ff6b6b'/%3E%3Ctext y='360' x='256' text-anchor='middle' font-size='320' font-family='serif'%3E%F0%9F%8D%BB%3C/text%3E%3C/svg%3E",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

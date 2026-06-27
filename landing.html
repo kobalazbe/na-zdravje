@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#ff6b6b" />
+  <meta name="description" content="Na Zdravje! — digitalna pivska igra za 2–10 igralcev. Ena naprava, kup smeha. Brezplačno, brez prijave." />
+  <title>Na Zdravje! 🍻 — Digitalna pivska igra</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" id="ati" href="" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/landing.css" />
+</head>
+<body>
+
+  <!-- =====================================================
+       1. HERO — 2-col: headline + phone mockup
+       ===================================================== -->
+  <header class="hero">
+    <span class="blob blob-1" aria-hidden="true"></span>
+    <span class="blob blob-2" aria-hidden="true"></span>
+    <span class="blob blob-3" aria-hidden="true"></span>
+
+    <!-- floating background emojis -->
+    <div class="hero-floaters" aria-hidden="true">
+      <span class="floater f1">💬</span>
+      <span class="floater f2">🎯</span>
+      <span class="floater f3">🍺</span>
+      <span class="floater f4">🎉</span>
+      <span class="floater f5">🔥</span>
+      <span class="floater f6">👥</span>
+    </div>
+
+    <div class="hero-left">
+      <!-- live activity badge -->
+      <div class="hero-live">
+        <span class="live-dot"></span>
+        <span id="liveCount">47</span> žurov aktivnih zdaj
+      </div>
+
+      <span class="hero-eyebrow">🍻 pivska igra</span>
+
+      <!-- headline with rotating word -->
+      <h1 class="hero-headline">
+        Zabava za celo<br>
+        <span class="hero-word-wrap"><span id="wordRotate">noč</span></span>, en telefon.
+      </h1>
+
+      <p class="hero-tagline">Digitalna pivska igra za 2–10 prijateljev. Vprašanja, izzivi, skupinske akcije — brez prijave, brez namestitve.</p>
+
+      <!-- social proof / trust -->
+      <div class="hero-trust">
+        <div class="trust-avs">
+          <span class="trust-av" style="background:#ff6b6b">🦊</span>
+          <span class="trust-av" style="background:#4dabf7">🐸</span>
+          <span class="trust-av" style="background:#38d9a9">🐼</span>
+          <span class="trust-av" style="background:#845ef7">🦄</span>
+          <span class="trust-av" style="background:#ff8cc8">🐯</span>
+        </div>
+        <span class="trust-text">Priljubljena med <strong>tisoče prijatelji</strong></span>
+      </div>
+
+      <div class="hero-ctas">
+        <a href="index.html" class="btn btn-hero btn-cta-pulse">Igraj zdaj →</a>
+        <button id="installBtn" class="btn btn-hero btn-ghost" hidden>Dodaj na telefon 📲</button>
+      </div>
+
+      <!-- benefit chips -->
+      <div class="hero-chips">
+        <span class="hero-chip">✓ Brezplačno</span>
+        <span class="hero-chip">✓ Brez prijave</span>
+        <span class="hero-chip">✓ Deluje offline</span>
+      </div>
+    </div>
+
+    <div class="hero-right" aria-hidden="true">
+      <div class="phone-wrap">
+        <!-- glow ring behind phone -->
+        <div class="phone-glow"></div>
+
+        <!-- floating mini-cards -->
+        <div class="mini-card mc-1" style="background:#38d9a9">
+          <span>💬</span><small>Vprašanje</small>
+        </div>
+        <div class="mini-card mc-2" style="background:#ff922b">
+          <span>🎯</span><small>Izziv</small>
+        </div>
+        <div class="mini-card mc-3" style="background:#845ef7">
+          <span>👥</span><small>Skupaj!</small>
+        </div>
+
+        <div class="phone-mockup">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="ph-bar">
+              <div class="ph-avatars">
+                <span class="ph-av" style="background:#ff6b6b">🦊</span>
+                <span class="ph-av" style="background:#4dabf7">🐸</span>
+                <span class="ph-av" style="background:#38d9a9">🐼</span>
+                <span class="ph-av" style="background:#845ef7">🦄</span>
+              </div>
+              <span class="ph-round">Krog 3</span>
+            </div>
+            <div class="ph-name">Ana je na vrsti 🎯</div>
+            <div class="ph-card">
+              <span class="ph-tag">🎯 Izziv</span>
+              <div class="ph-text">Naredi selfie z osebo na svoji levi.</div>
+              <span class="ph-sips">🍺 1 požirek</span>
+            </div>
+            <div class="ph-btn">Naprej →</div>
+          </div>
+        </div>
+
+        <span class="phone-blob" style="background:#ffd93d;width:140px;height:140px;top:-30px;right:-30px"></span>
+        <span class="phone-blob" style="background:#4dabf7;width:100px;height:100px;bottom:-20px;left:-20px;animation-delay:-4s"></span>
+      </div>
+    </div>
+  </header>
+
+
+  <!-- =====================================================
+       2. STATS BAR
+       ===================================================== -->
+  <div class="stats-bar">
+    <div class="stat-item reveal-child" style="--delay:0ms">
+      <span class="stat-num">100+</span>
+      <span class="stat-label">kart v igri</span>
+    </div>
+    <div class="stat-divider" aria-hidden="true"></div>
+    <div class="stat-item reveal-child" style="--delay:80ms">
+      <span class="stat-num">2–10</span>
+      <span class="stat-label">igralcev</span>
+    </div>
+    <div class="stat-divider" aria-hidden="true"></div>
+    <div class="stat-item reveal-child" style="--delay:160ms">
+      <span class="stat-num">2</span>
+      <span class="stat-label">načina igre</span>
+    </div>
+    <div class="stat-divider" aria-hidden="true"></div>
+    <div class="stat-item reveal-child" style="--delay:240ms">
+      <span class="stat-num">0</span>
+      <span class="stat-label">potrebnih prijav</span>
+    </div>
+  </div>
+
+
+  <!-- =====================================================
+       3. FEATURE ROW 1 — text left, visual right
+       ===================================================== -->
+  <section class="feat-section l-tint">
+    <div class="feat-row">
+      <div class="feat-text">
+        <span class="feat-label">Enostavno</span>
+        <h2 class="feat-title reveal">Začni igrati v 30 sekundah.</h2>
+        <p class="feat-desc reveal">Brez registracije, brez nalaganja, brez čakanja. Odpri igro, dodaj igralce, izberi način in podaj telefon. To je vse.</p>
+        <ul class="feat-list">
+          <li class="reveal-child" style="--delay:0ms"><span class="feat-check">✓</span> Deluje brez interneta po prvem obisku</li>
+          <li class="reveal-child" style="--delay:80ms"><span class="feat-check">✓</span> Samodejno si zapomni napredek</li>
+          <li class="reveal-child" style="--delay:160ms"><span class="feat-check">✓</span> En telefon za 2–10 igralcev</li>
+        </ul>
+      </div>
+      <div class="feat-visual reveal">
+        <div class="setup-visual">
+          <div class="setup-step">
+            <div class="setup-ico-wrap" style="background:#4dabf7">👥</div>
+            <span class="setup-label">Dodaj 2–10 igralcev</span>
+          </div>
+          <div class="setup-arrow">→</div>
+          <div class="setup-step">
+            <div class="setup-ico-wrap" style="background:#ff922b">🎮</div>
+            <span class="setup-label">Izberi način &amp; težavnost</span>
+          </div>
+          <div class="setup-arrow">→</div>
+          <div class="setup-step active">
+            <div class="setup-ico-wrap" style="background:#ff6b6b">🍻</div>
+            <span class="setup-label">Igraj!</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- =====================================================
+       4. FEATURE ROW 2 — visual left, text right
+       ===================================================== -->
+  <section class="feat-section">
+    <div class="feat-row feat-row-reverse">
+      <div class="feat-visual reveal">
+        <div class="card-types-visual">
+          <div class="ct-chip reveal-child" style="--delay:0ms;background:#38d9a9">
+            <span>💬</span>
+            <div>
+              <strong>Vprašanje</strong>
+              <p>Odgovori ali popij požirek</p>
+            </div>
+          </div>
+          <div class="ct-chip reveal-child" style="--delay:100ms;background:#ff922b">
+            <span>🎯</span>
+            <div>
+              <strong>Izziv</strong>
+              <p>Opravi ali piješ kazen</p>
+            </div>
+          </div>
+          <div class="ct-chip reveal-child" style="--delay:200ms;background:#845ef7">
+            <span>👥</span>
+            <div>
+              <strong>Skupinski</strong>
+              <p>Velja za vse hkrati</p>
+            </div>
+          </div>
+          <div class="ct-chip reveal-child" style="--delay:300ms;background:#ff6b6b">
+            <span>🍺</span>
+            <div>
+              <strong>Pij!</strong>
+              <p>Neposreden ukaz za pitje</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="feat-text">
+        <span class="feat-label">Raznolikost</span>
+        <h2 class="feat-title reveal">4 tipi kart, neskončno možnosti.</h2>
+        <p class="feat-desc reveal">Vsak krog je drugačen. Vprašanja za pogovor, izzivi za akcijo, skupinski momenti za smeh in neposredni ukazi za pitje — igra nikoli ne postane dolgočasna.</p>
+        <ul class="feat-list">
+          <li class="reveal-child" style="--delay:0ms"><span class="feat-check">✓</span> Deck se avtomatsko obnovi — igra ne konča</li>
+          <li class="reveal-child" style="--delay:80ms"><span class="feat-check">✓</span> Možnost izklopa kart za pitje</li>
+          <li class="reveal-child" style="--delay:160ms"><span class="feat-check">✓</span> Lestvica požirkov po koncu</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- =====================================================
+       5. DARK BANNER — Pikantno mode
+       ===================================================== -->
+  <section class="dark-banner">
+    <div class="dark-inner">
+      <div class="dark-left">
+        <span class="dark-eyebrow">18+ · Premium</span>
+        <h2 class="dark-title">Pikantno 🌶️<br>za odrasle glave.</h2>
+        <p class="dark-desc">Drznejše in flirtavo — okusno, ne vulgarno. Odklenite Pikantno modo za nepozabne momente.</p>
+        <a href="index.html" class="btn dark-btn">Odkleni Pikantno →</a>
+      </div>
+      <div class="dark-right">
+        <div class="dark-features">
+          <div class="dark-feat">
+            <span class="dark-feat-ico">🌶️</span>
+            <div>
+              <strong>Pikantno vprašanja</strong>
+              <p>Za tiste, ki si upajo</p>
+            </div>
+          </div>
+          <div class="dark-feat">
+            <span class="dark-feat-ico">😏</span>
+            <div>
+              <strong>Flirtavi izzivi</strong>
+              <p>Brez meja, z okusom</p>
+            </div>
+          </div>
+          <div class="dark-feat">
+            <span class="dark-feat-ico">🔥</span>
+            <div>
+              <strong>3 težavnosti</strong>
+              <p>Lahko · Sredje · Divje</p>
+            </div>
+          </div>
+          <div class="dark-feat">
+            <span class="dark-feat-ico">👑</span>
+            <div>
+              <strong>Premium vsebina</strong>
+              <p>50+ ekskluzivnih kart</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- =====================================================
+       6. FEATURES GRID — 3×2
+       ===================================================== -->
+  <section class="feat-section l-tint">
+    <div class="l-section">
+      <h2 class="l-title reveal">Vse, kar potrebuješ za odlično noč.</h2>
+      <p class="l-sub reveal">Zasnovano za pravo izkušnjo — brez motenj, samo zabava.</p>
+
+      <div class="features-grid">
+        <div class="fg-card reveal-child" style="--delay:0ms">
+          <span class="fg-ico">🎲</span>
+          <h3>Takoj začneš</h3>
+          <p>Brez prijave, brez obrazcev. Odpri in igraj.</p>
+        </div>
+        <div class="fg-card reveal-child" style="--delay:60ms">
+          <span class="fg-ico">📱</span>
+          <h3>Ena naprava</h3>
+          <p>Telefon kroži med igralci — res tako preprosto.</p>
+        </div>
+        <div class="fg-card reveal-child" style="--delay:120ms">
+          <span class="fg-ico">🌐</span>
+          <h3>Brez interneta</h3>
+          <p>Deluje offline. Nič ti ne bo prekinilo noči.</p>
+        </div>
+        <div class="fg-card reveal-child" style="--delay:180ms">
+          <span class="fg-ico">🔊</span>
+          <h3>Zvoki &amp; konfeti</h3>
+          <p>Prava izkušnja z zvočnimi efekti in konfeti animacijo.</p>
+        </div>
+        <div class="fg-card reveal-child" style="--delay:240ms">
+          <span class="fg-ico">🔄</span>
+          <h3>Karte se obnavljajo</h3>
+          <p>Deck se samodejno premeša — igra ne konča sama od sebe.</p>
+        </div>
+        <div class="fg-card reveal-child" style="--delay:300ms">
+          <span class="fg-ico">💾</span>
+          <h3>Samodejno shranjevanje</h3>
+          <p>Zaprli telefon? Nadaljuj točno tam, kjer ste ostali.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- =====================================================
+       7. CARD SHOWCASE — animated demo
+       ===================================================== -->
+  <section id="cardsSection" class="feat-section">
+    <div class="l-section">
+      <h2 class="l-title reveal">Kakšne karte boš dobil?</h2>
+      <p class="l-sub reveal">4 vrste kart — nikoli ne veš, kaj te čaka</p>
+      <div class="showcase-wrap">
+        <div class="showcase-card reveal" id="showcaseCard" aria-live="polite"></div>
+        <div class="card-dots" id="cardDots" role="tablist" aria-label="Tip karte"></div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- =====================================================
+       8. PRICING — simple, no hidden fees
+       ===================================================== -->
+  <section class="feat-section l-tint">
+    <div class="l-section">
+      <h2 class="l-title reveal">Preprosto cenovanje.</h2>
+      <p class="l-sub reveal">Začni brezplačno. Odkleni vse za eno noč ali za vedno.</p>
+
+      <div class="pricing-grid">
+        <div class="tier-card reveal-child" style="--delay:0ms">
+          <span class="tier-emoji">🎟️</span>
+          <div class="tier-name">Žur Pass</div>
+          <div class="tier-price">2,49 €</div>
+          <div class="tier-sub">48 ur vsega</div>
+          <ul class="tier-feats">
+            <li>✅ Vse karte</li>
+            <li>✅ Pikantno modo</li>
+            <li>✅ Poteče po 48 urah</li>
+          </ul>
+          <a href="index.html" class="btn">Igraj zdaj</a>
+        </div>
+
+        <div class="tier-card best reveal-child" style="--delay:120ms">
+          <span class="tier-flag">NAJ VREDNOST</span>
+          <span class="tier-emoji">👑</span>
+          <div class="tier-name">Letno</div>
+          <div class="tier-price">19,99 €</div>
+          <div class="tier-sub">/leto · prihraniš 58 %</div>
+          <ul class="tier-feats">
+            <li>✅ Vse karte za vedno</li>
+            <li>✅ Pikantno modo</li>
+            <li>✅ Vse posodobitve</li>
+          </ul>
+          <a href="index.html" class="btn btn-grape">Postani Premium</a>
+        </div>
+
+        <div class="tier-card reveal-child" style="--delay:240ms">
+          <span class="tier-emoji">🍻</span>
+          <div class="tier-name">Mesečno</div>
+          <div class="tier-price">3,99 €</div>
+          <div class="tier-sub">/mesec</div>
+          <ul class="tier-feats">
+            <li>✅ Vse karte</li>
+            <li>✅ Pikantno modo</li>
+            <li>✅ Prekliči kadarkoli</li>
+          </ul>
+          <a href="index.html" class="btn">Začni</a>
+        </div>
+      </div>
+
+      <p class="pricing-note reveal">💡 Brezplačna verzija vključuje Klasično modo z 15 kartami na težavnost — brez kreditne kartice.</p>
+    </div>
+  </section>
+
+
+  <!-- =====================================================
+       9. FAQ — accordion
+       ===================================================== -->
+  <section class="feat-section">
+    <div class="l-section" style="max-width:680px">
+      <h2 class="l-title reveal">Pogosta vprašanja</h2>
+      <p class="l-sub reveal">Vse, kar moraš vedeti pred prvo igro</p>
+
+      <div class="faq-list">
+        <div class="faq-item reveal">
+          <button class="faq-q" aria-expanded="false">
+            <span>Za koliko igralcev je igra?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-a">
+            <p>Igra je zasnovana za 2 do 10 igralcev na eni napravi. Telefon kroži med igralci — vsak dobi karto na svojo vrsto.</p>
+          </div>
+        </div>
+
+        <div class="faq-item reveal">
+          <button class="faq-q" aria-expanded="false">
+            <span>Ali potrebujem internet?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-a">
+            <p>Ne! Po prvem nalaganju igra deluje brez interneta. Vse se shrani lokalno na telefon — igraj kjerkoli.</p>
+          </div>
+        </div>
+
+        <div class="faq-item reveal">
+          <button class="faq-q" aria-expanded="false">
+            <span>Je igra resnično brezplačna?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-a">
+            <p>Ja! Klasično modo z vsemi 3 težavnostmi je popolnoma brezplačna. Premium odklene Pikantno modo in 100+ kart. Brez skritih stroškov.</p>
+          </div>
+        </div>
+
+        <div class="faq-item reveal">
+          <button class="faq-q" aria-expanded="false">
+            <span>Kako dodam igro na domači zaslon?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-a">
+            <p><strong>iPhone:</strong> Odpri igro v Safariju → pritisni gumb Skupna raba ↑ → „Dodaj na začetni zaslon".<br><strong>Android:</strong> Odpri igro v Chromu → meni ⋮ → „Dodaj na začetni zaslon".</p>
+          </div>
+        </div>
+
+        <div class="faq-item reveal">
+          <button class="faq-q" aria-expanded="false">
+            <span>Je igra primerna za vse?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-a">
+            <p>Klasično modo je zabavno za vse starosti. Pikantno modo je namenjeno polnoletnim (18+) in je zaklenjeno za mladoletnike. Igrajte odgovorno. 🔞</p>
+          </div>
+        </div>
+
+        <div class="faq-item reveal">
+          <button class="faq-q" aria-expanded="false">
+            <span>Kakšna je razlika med načinoma igre?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-a">
+            <p><strong>Klasično 🎉</strong> — zabavna vprašanja in izzivi za vsako druščino. Primerno za vse.<br><strong>Pikantno 🌶️</strong> — drznejše in flirtavo vprašanja za odrasle. Samo za pogumne ekipe.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- =====================================================
+       10. CTA BANNER + INSTALL
+       ===================================================== -->
+  <section class="cta-banner" id="installSection">
+    <div class="cta-inner">
+      <div class="cta-left">
+        <h2 class="cta-title">Igra je na enem kliku.</h2>
+        <p class="cta-desc">Dodaj Na Zdravje! na domači zaslon — naslednjič ne iščeš, samo pritisneš.</p>
+        <div class="cta-actions">
+          <a href="index.html" class="btn cta-play-btn">Igraj zdaj →</a>
+          <button id="installBtn2" class="btn btn-ghost" hidden>Dodaj na telefon 📲</button>
+        </div>
+      </div>
+      <div class="cta-right">
+        <div id="androidBlock" class="install-platform" hidden>
+          <h3>🤖 Android / Chrome</h3>
+          <button id="androidTrigger" class="btn" style="--accent:#4dabf7;--accent-deep:#1f8de0;margin-top:12px">
+            Dodaj na telefon 📲
+          </button>
+          <p class="install-hint">Chrome bo vprašal za potrditev.</p>
+        </div>
+        <div id="iosBlock" class="install-platform">
+          <h3>🍎 iPhone / Safari</h3>
+          <div class="install-step">
+            <span class="install-step-num">1</span>
+            <span>Pritisni <strong>Skupna raba</strong> ↑ na dnu Safarija</span>
+          </div>
+          <div class="install-step">
+            <span class="install-step-num">2</span>
+            <span>Izberi <strong>„Dodaj na začetni zaslon"</strong></span>
+          </div>
+          <div class="install-step">
+            <span class="install-step-num">3</span>
+            <span>Pritisni <strong>Dodaj</strong> — to je to!</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- =====================================================
+       FOOTER
+       ===================================================== -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <div class="footer-logo">NA ZDRAVJE! 🍻</div>
+        <p class="footer-tagline">Digitalna pivska igra za prave žure.</p>
+      </div>
+      <nav class="footer-col">
+        <span class="footer-col-title">Igra</span>
+        <a href="index.html">Igraj zdaj</a>
+        <a href="#cardsSection">Karte</a>
+        <a href="#installSection">Namesti</a>
+      </nav>
+      <nav class="footer-col">
+        <span class="footer-col-title">Info</span>
+        <a href="#kako">Pravila</a>
+        <a href="#faq">Pogosta vprašanja</a>
+        <a href="index.html">Premium</a>
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <p class="footer-notice">🔞 Igra je namenjena polnoletnim. Pij odgovorno.</p>
+      <p class="footer-copy">© 2025 Na Zdravje! — Narejena z ❤️ za boljše žure.</p>
+    </div>
+  </footer>
+
+
+  <script type="module" src="js/landing.js"></script>
+</body>
+</html>
