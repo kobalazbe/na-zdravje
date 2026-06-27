@@ -153,6 +153,7 @@ const ctx = {
     track("paywall_view", { source });
     openModal((c) => PaywallModal(c, source, onDismiss));
   },
+
   startCheckout(tier) {
     track("checkout_start", { tier });
     const plan = PRICING.find((p) => p.id === tier);
@@ -161,17 +162,22 @@ const ctx = {
       const url = email
         ? `${plan.link}?prefilled_email=${encodeURIComponent(email)}`
         : plan.link;
-      window.open(url, "_blank", "noopener");
+      // Navigate in the same tab so Stripe's success redirect (?payment=success)
+      // lands back here and boot() detects it. In Stripe Dashboard set the
+      // Payment Link "After payment" redirect to: <your-domain>?payment=success
+      window.location.href = url;
       return true;
     }
     return false;
   },
+
   redeemCode(code) {
     const r = entitlement.redeem(code);
     track(r.ok ? "redeem_ok" : "redeem_fail", r.ok ? { tier: r.tier } : {});
     if (r.ok) { audio.success(); confetti.burst(110, 0.3); }
     return r;
   },
+
   async refreshEntitlement() {
     if (ctx.currentUser) {
       const { data: profile } = await getProfile(ctx.currentUser.id);
@@ -256,6 +262,27 @@ function sanitizeStart() {
   if (state.screen === "customCards" && !entitlement.isPremium()) state.screen = "home";
 }
 
+/* Celebrate when free→premium transition is detected. */
+function _onPaymentConfirmed() {
+  audio.success();
+  confetti.burst(120, 0.3);
+  render();
+  openModal((c) => _paymentSuccessModal(c));
+}
+
+/* Poll the profile at increasing intervals; resolve once premium or give up. */
+async function _pollUntilPremium(userId, attempts = [3000, 6000, 12000, 20000]) {
+  for (const delay of attempts) {
+    await new Promise((r) => setTimeout(r, delay));
+    const { data } = await getProfile(userId);
+    if (!data) continue;
+    const wasFree = !entitlement.isPremium();
+    entitlement.setFromProfile(data);
+    if (wasFree && entitlement.isPremium()) { _onPaymentConfirmed(); return; }
+    if (entitlement.isPremium()) return; // already premium, nothing to do
+  }
+}
+
 /* ---- boot: check session first, then render ---- */
 async function boot() {
   // Surface OAuth provider errors (Google sends ?error=… or #error=…) instead
@@ -310,22 +337,22 @@ async function boot() {
   render();
   entitlement.refresh();
 
-  // After a Stripe redirect: give the webhook ~3 s to land, then re-check
-  if (paymentReturn) {
-    setTimeout(async () => {
-      const { data: fresh } = await getProfile(session.user.id);
-      if (!fresh) return;
-      const wasFreeBefore = !entitlement.isPremium();
-      entitlement.setFromProfile(fresh);
-      if (wasFreeBefore && entitlement.isPremium()) {
-        audio.success();
-        confetti.burst(120, 0.3);
-        render(); // rerender home with premium badge
-        openModal((c) => _paymentSuccessModal(c));
-      }
-    }, 3000);
+  // After a Stripe redirect: poll with back-off until the webhook lands
+  if (paymentReturn && !entitlement.isPremium()) {
+    _pollUntilPremium(session.user.id);
   }
 }
+
+/* When the user switches back to this tab after paying in Stripe,
+   re-check their profile so the UI updates without a manual reload. */
+document.addEventListener("visibilitychange", async () => {
+  if (document.hidden || !ctx.currentUser) return;
+  const wasFree = !entitlement.isPremium();
+  const { data } = await getProfile(ctx.currentUser.id);
+  if (!data) return;
+  entitlement.setFromProfile(data);
+  if (wasFree && entitlement.isPremium()) _onPaymentConfirmed();
+});
 
 function _paymentSuccessModal(ctx) {
   const node = document.createElement("div");

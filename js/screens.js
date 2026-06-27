@@ -694,6 +694,8 @@ export function PaywallModal(ctx, source = "generic", onDismiss) {
 
         <div class="tier-list">${tiers}</div>
 
+        <button class="btn" data-act="verify" style="display:none">✓ Plačal sem — preveri dostop</button>
+
         <div class="redeem">
           <input class="text-input" id="redeemInput" placeholder="Imaš kodo? Vnesi jo…" autocomplete="off" />
           <button class="btn icon-btn" data-act="redeem" aria-label="Vnovči">✓</button>
@@ -708,6 +710,7 @@ export function PaywallModal(ctx, source = "generic", onDismiss) {
 
   const msg = node.querySelector("#redeemMsg");
   const input = node.querySelector("#redeemInput");
+  const verifyBtn = node.querySelector('[data-act="verify"]');
 
   node.querySelectorAll("[data-tier]").forEach((b) => {
     b.onclick = () => {
@@ -715,9 +718,28 @@ export function PaywallModal(ctx, source = "generic", onDismiss) {
       const opened = ctx.startCheckout(b.dataset.tier);
       if (!opened) {
         msg.textContent = "Plačilo pride kmalu. Imaš kodo? Vnesi jo spodaj. 👇";
+      } else {
+        // startCheckout navigates away; if for some reason we're still here, show verify
+        verifyBtn.style.display = "";
+        msg.textContent = "Odpira Stripe... Ko zaključiš, se vrni in klikni gumb zgoraj.";
       }
     };
   });
+
+  verifyBtn.onclick = async () => {
+    verifyBtn.disabled = true;
+    verifyBtn.textContent = "Preverjam...";
+    await ctx.refreshEntitlement();
+    if (ctx.isPremium()) {
+      ctx.audio.pop();
+      ctx.closeModal();
+      ctx.rerender();
+    } else {
+      verifyBtn.disabled = false;
+      verifyBtn.textContent = "✓ Plačal sem — preveri dostop";
+      msg.textContent = "Plačilo še ni potrjeno. Počakaj hip in poskusi znova.";
+    }
+  };
 
   function doRedeem() {
     const r = ctx.redeemCode(input.value);

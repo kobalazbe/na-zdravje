@@ -5,7 +5,8 @@
       "name": "na-zdravje",
       "runtimeExecutable": "python",
       "runtimeArgs": ["server.py"],
-      "port": 5544
+      "port": 5544,
+      "autoPort": true
     }
   ]
 }

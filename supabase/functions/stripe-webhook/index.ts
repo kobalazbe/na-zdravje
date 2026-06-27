@@ -149,10 +149,13 @@ async function grantTier(email: string, stripeTier: string, subscriptionId: stri
     ? new Date(Date.now() + PASS_DURATION_MS).toISOString()
     : null;
 
+  // upsert so it works even if the profile row was never created
   const { error } = await supabase
     .from("profiles")
-    .update({ tier, pass_expiry: passExpiry, stripe_customer_id: subscriptionId })
-    .eq("id", user.id);
+    .upsert(
+      { id: user.id, tier, pass_expiry: passExpiry, stripe_subscription_id: subscriptionId },
+      { onConflict: "id" }
+    );
 
   if (error) throw error;
   console.log(`Granted tier=${tier} to ${email}`);

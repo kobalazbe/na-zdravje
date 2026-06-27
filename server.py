@@ -1,4 +1,5 @@
 import http.server
+import os
 import socketserver
 
 class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
@@ -12,6 +13,6 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
 class ThreadingHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     daemon_threads = True
 
-PORT = 5544
+PORT = int(os.environ.get("PORT", 5544))
 with ThreadingHTTPServer(("", PORT), NoCacheHandler) as httpd:
     httpd.serve_forever()
