@@ -104,7 +104,7 @@ body {
 }
 .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--accent-deep); }
 
-.btn-hero { font-size: 1.2rem; min-height: 64px; border-radius: var(--radius-lg); padding: 18px 36px; }
+.btn-hero { font-size: 1rem; min-height: 50px; border-radius: var(--radius); padding: 13px 24px; }
 .btn-ghost {
   background: var(--white);
   color: var(--ink);
@@ -160,9 +160,10 @@ body {
 .hero-game-name {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: clamp(2rem, 6vw, 3rem);
+  font-size: clamp(3rem, 10vw, 5rem);
   color: var(--coral);
-  letter-spacing: -0.5px;
+  letter-spacing: -1px;
+  line-height: 1;
   margin-bottom: 16px;
   animation: screen-in .4s .05s both;
 }
