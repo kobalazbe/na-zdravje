@@ -345,13 +345,26 @@ export function GameScreen(ctx) {
     return () => window.removeEventListener('devicemotion', handler);
   }
 
-  function doReveal() {
+  async function doReveal() {
     if (revealed) return;
+    // On iOS, request motion permission using the tap as the user gesture.
+    // Only runs once; subsequent calls skip this block.
+    if (!motionGranted) {
+      const needsPerm = typeof DeviceMotionEvent !== 'undefined'
+        && typeof DeviceMotionEvent.requestPermission === 'function';
+      if (needsPerm) {
+        try {
+          const r = await DeviceMotionEvent.requestPermission();
+          if (r === 'granted') motionGranted = true;
+        } catch (_) {}
+      } else if (window.DeviceMotionEvent) {
+        motionGranted = true; // Android: no permission needed
+      }
+    }
     revealed = true;
     if (shakeCleanup) { shakeCleanup(); shakeCleanup = null; }
     ctx.setTiltCleanup(null);
     cardEl.onclick = null;
-    // Use rAF so the flip animation starts in a clean render frame
     requestAnimationFrame(() => renderCard(true));
   }
 
@@ -394,43 +407,18 @@ export function GameScreen(ctx) {
     if (!revealed) {
       cardEl.className = 'card card-back';
       cardEl.style.background = '';
-      const isIOS = typeof DeviceMotionEvent !== 'undefined'
-        && typeof DeviceMotionEvent.requestPermission === 'function';
       cardEl.innerHTML = `
         <div class="cb-logo">NA ZDRAVJE! 🍻</div>
         <div class="cb-body">
           <div class="cb-hint">👆 Tapni kartico za razkritje</div>
-          <div class="cb-or">ali</div>
-          <div class="cb-hint">📳 Stresite telefon</div>
-          ${isIOS && !motionGranted ? '<button id="shakePermBtn">Aktiviraj stresanje 📳</button>' : ''}
+          ${motionGranted ? '<div class="cb-or">ali</div><div class="cb-hint">📳 Stresite telefon</div>' : ''}
         </div>`;
       actions.innerHTML = '';
       cardEl.onclick = () => doReveal();
 
-      const armShake = () => {
+      if (motionGranted && window.DeviceMotionEvent) {
         shakeCleanup = setupShake(doReveal);
         ctx.setTiltCleanup(() => { if (shakeCleanup) { shakeCleanup(); shakeCleanup = null; } });
-      };
-
-      if (!isIOS && window.DeviceMotionEvent) {
-        armShake();
-      } else if (isIOS) {
-        if (motionGranted) {
-          // Permission already granted earlier this session — arm shake directly
-          armShake();
-        } else {
-          document.getElementById('shakePermBtn')?.addEventListener('click', async e => {
-            e.stopPropagation();
-            const btn = e.currentTarget;
-            const r = await DeviceMotionEvent.requestPermission();
-            if (r === 'granted') {
-              motionGranted = true;
-              btn.textContent = '✓ Stresite telefon!';
-              btn.disabled = true;
-              armShake();
-            }
-          });
-        }
       }
       renderScores();
       return;
