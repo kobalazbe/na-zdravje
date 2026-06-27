@@ -984,7 +984,11 @@ export function CustomCardsScreen(ctx) {
   async function loadCards() {
     ccList.innerHTML = `<p class="hint" style="text-align:center">Nalagam…</p>`;
     const { data, error } = await ctx.getCustomCards(state.mode, state.difficulty);
-    if (error || !data || !data.length) {
+    if (error) {
+      ccList.innerHTML = `<p class="hint" style="text-align:center;color:var(--coral)">Napaka pri nalaganju kartic.</p>`;
+      return;
+    }
+    if (!data || !data.length) {
       ccList.innerHTML = `<p class="hint" style="text-align:center">Ni kartic. Ustvari svojo! 🃏</p>`;
       return;
     }

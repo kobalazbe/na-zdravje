@@ -283,7 +283,7 @@ body {
 .turn-name { font-family: var(--font-display); font-weight: 800; font-size: 1.35rem; }
 .turn-label { font-size: .8rem; color: var(--ink-soft); }
 
-.card-area { flex: 1; display: grid; place-items: center; perspective: 1200px; padding: 14px 0; }
+.card-area { flex: 1; display: grid; place-items: center; perspective: 1200px; padding: 8px 0; }
 
 .card {
   width: 100%;
@@ -332,20 +332,6 @@ body {
   font-size: 1rem;
   color: rgba(255,255,255,.85);
 }
-.cb-or { font-size: .85rem; color: rgba(255,255,255,.45); }
-#shakePermBtn {
-  background: rgba(255,255,255,.15);
-  border: 1.5px solid rgba(255,255,255,.3);
-  border-radius: 999px;
-  color: white;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: .9rem;
-  padding: 8px 20px;
-  cursor: pointer;
-  margin-top: 4px;
-}
-
 .card .type-tag {
   align-self: flex-start;
   background: rgba(255,255,255,.25);
@@ -375,12 +361,13 @@ body {
   font-size: 1.05rem;
 }
 
-.game-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+.game-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
 
 /* score chips */
 .scoreboard {
-  display: flex; gap: 10px; overflow-x: auto; padding: 6px 12px 4px;
+  display: flex; gap: 10px; overflow-x: auto; padding: 4px 12px 2px;
   scrollbar-width: none;
+  margin-top: 6px;
 }
 .scoreboard::-webkit-scrollbar { display: none; }
 .score-chip {
@@ -404,8 +391,15 @@ body {
 .modal-backdrop {
   position: fixed; inset: 0; z-index: 50;
   background: rgba(43,33,64,.55);
-  display: grid; place-items: center; padding: 24px;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 24px 24px calc(24px + env(safe-area-inset-bottom));
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
   animation: fade .2s ease both;
+}
+@supports (align-items: center) {
+  @media (min-height: 700px) {
+    .modal-backdrop { align-items: center; }
+  }
 }
 @keyframes fade { from{opacity:0} to{opacity:1} }
 .modal {
@@ -413,6 +407,7 @@ body {
   background: var(--white); border-radius: var(--radius-lg);
   padding: 26px 22px; text-align: center;
   box-shadow: var(--shadow-soft);
+  flex-shrink: 0;
   animation: screen-in .3s cubic-bezier(.2,.9,.3,1.2) both;
 }
 .modal .big-emoji { font-size: 3.2rem; }
@@ -431,12 +426,6 @@ body {
 .podium-row .name { flex: 1; font-weight: 700; font-size: 1.1rem; }
 .podium-row .stat { color: var(--ink-soft); font-weight: 600; }
 .podium-row.first { background: linear-gradient(120deg, #fff5cc, #ffe6a0); }
-
-.super-badge {
-  display: inline-block; background: var(--grape); color: #fff;
-  border-radius: 999px; padding: 4px 12px; font-size: .82rem; font-weight: 600;
-  margin-top: 6px;
-}
 
 /* ===========================================================
    Confetti canvas
