@@ -19,15 +19,25 @@ export async function signIn(email, password) {
   return supabase.auth.signInWithPassword({ email, password })
 }
 
-export async function signUp(email, password) {
+export async function signUp(email, password, displayName) {
   return supabase.auth.signUp({
     email,
     password,
     options: {
       // Where the "Confirm your email" link sends the user back to
       emailRedirectTo: window.location.origin + window.location.pathname,
+      // Stored on the user so we can greet them by name instead of email
+      data: displayName ? { display_name: displayName } : undefined,
     },
   })
+}
+
+/* Best display name for a user: chosen name → Google name → email local part */
+export function displayName(user) {
+  if (!user) return ""
+  const m = user.user_metadata || {}
+  return m.display_name || m.full_name || m.name
+      || (user.email ? user.email.split("@")[0] : "Igralec")
 }
 
 export async function signInWithGoogle() {

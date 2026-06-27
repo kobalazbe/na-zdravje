@@ -18,7 +18,7 @@ import {
 } from "./screens.js";
 import {
   getSession, getProfile, signIn, signUp, signOut as authSignOutFn,
-  resetPassword, updatePassword, signInWithGoogle, supabase,
+  resetPassword, updatePassword, signInWithGoogle, displayName, supabase,
   getCustomCards, addCustomCard, deleteCustomCard,
 } from "./auth.js";
 
@@ -124,6 +124,7 @@ const ctx = {
   authResetPassword: resetPassword,
   authUpdatePassword: updatePassword,
   authSignInWithGoogle: signInWithGoogle,
+  displayName: () => displayName(ctx.currentUser),
 
   async onAuthSuccess(session) {
     if (!session) session = await getSession();
