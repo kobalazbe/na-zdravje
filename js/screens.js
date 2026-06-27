@@ -327,13 +327,18 @@ export function GameScreen(ctx) {
 
   function setupShake(cb) {
     if (!window.DeviceMotionEvent) return () => {};
-    const THRESHOLD = 22;
     let last = 0;
     const handler = e => {
-      const a = e.accelerationIncludingGravity;
+      // Prefer acceleration without gravity (starts at 0, cleaner signal).
+      // Fall back to accelerationIncludingGravity (always has ~9.8 from gravity).
+      const hasClean = e.acceleration && e.acceleration.x !== null;
+      const a = hasClean ? e.acceleration : e.accelerationIncludingGravity;
       if (!a) return;
-      const mag = Math.sqrt(a.x ** 2 + a.y ** 2 + a.z ** 2);
-      if (mag > THRESHOLD && Date.now() - last > 1000) {
+      const x = a.x || 0, y = a.y || 0, z = a.z || 0;
+      const mag = Math.sqrt(x * x + y * y + z * z);
+      // Without gravity: threshold 8; with gravity: threshold 15 (9.8 baseline + ~5 shake)
+      const threshold = hasClean ? 8 : 15;
+      if (mag > threshold && Date.now() - last > 800) {
         last = Date.now();
         cb();
       }
@@ -408,9 +413,12 @@ export function GameScreen(ctx) {
         ctx.setTiltCleanup(() => { if (shakeCleanup) { shakeCleanup(); shakeCleanup = null; } });
       }
       if (isIOS) {
-        document.getElementById('shakePermBtn')?.addEventListener('click', async () => {
+        document.getElementById('shakePermBtn')?.addEventListener('click', async e => {
+          e.stopPropagation();  // prevent bubbling to cardEl.onclick (which would reveal)
+          const btn = e.currentTarget;
           const r = await DeviceMotionEvent.requestPermission();
           if (r === 'granted') {
+            btn.remove();
             shakeCleanup = setupShake(doReveal);
             ctx.setTiltCleanup(() => { if (shakeCleanup) { shakeCleanup(); shakeCleanup = null; } });
           }
