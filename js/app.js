@@ -26,6 +26,16 @@ const root = document.getElementById("app");
 let modalNode = null;
 let _tiltCleanup = null;
 
+const CC_DISABLED_KEY = "naZdravje.cc.off.v1";
+function getDisabledIds() {
+  try { return new Set(JSON.parse(localStorage.getItem(CC_DISABLED_KEY) || "[]")); } catch (_) { return new Set(); }
+}
+function toggleDisabledId(id) {
+  const s = getDisabledIds();
+  if (s.has(id)) s.delete(id); else s.add(id);
+  try { localStorage.setItem(CC_DISABLED_KEY, JSON.stringify([...s])); } catch (_) {}
+}
+
 const SCREENS = {
   home: HomeScreen,
   setup: SetupScreen,
@@ -72,10 +82,14 @@ const ctx = {
   // game lifecycle
   async startGame() {
     resetRound();
-    // Prefetch custom cards for premium users (mode+difficulty specific)
     if (entitlement.isPremium() && ctx.currentUser) {
-      const { data } = await getCustomCards(ctx.currentUser.id, state.mode, state.difficulty);
-      state.customCards = data || [];
+      try {
+        const { data } = await getCustomCards(ctx.currentUser.id, state.mode, state.difficulty);
+        const disabled = getDisabledIds();
+        state.customCards = (data || []).filter((c) => !disabled.has(c.id));
+      } catch (_) {
+        state.customCards = [];
+      }
     } else {
       state.customCards = [];
     }
@@ -175,6 +189,8 @@ const ctx = {
     return addCustomCard(ctx.currentUser.id, card);
   },
   deleteCustomCard(id) { return deleteCustomCard(id); },
+  isCardDisabled(id) { return getDisabledIds().has(id); },
+  toggleCardDisabled(id) { toggleDisabledId(id); },
   manageCustomCards() { ctx.go("customCards"); },
 
   // ---- tilt sensor cleanup (called on each render to kill old listeners) ----

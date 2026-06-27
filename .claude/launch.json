@@ -4,7 +4,7 @@
     {
       "name": "na-zdravje",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5544"],
+      "runtimeArgs": ["server.py"],
       "port": 5544
     }
   ]

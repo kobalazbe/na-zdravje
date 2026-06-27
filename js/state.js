@@ -43,10 +43,10 @@ export const DIFFICULTIES = {
 
 // canonical card-type metadata (label + emoji shown on the card)
 export const CARD_TYPES = {
-  vprasanje: { label: "Vprašanje", emoji: "💬" },
-  izziv:     { label: "Izziv",     emoji: "🎯" },
-  skupinski: { label: "Skupinski izziv", emoji: "👥" },
-  pijaca:    { label: "Pij!",      emoji: "🍺" },
+  vprasanje: { label: "Vprašanje",      emoji: "💬", color: "#845ef7", colorDeep: "#6741d9" },
+  izziv:     { label: "Izziv",          emoji: "🎯", color: "#ff922b", colorDeep: "#e8590c" },
+  skupinski: { label: "Skupinski izziv", emoji: "👥", color: "#22b8cf", colorDeep: "#0c8599" },
+  pijaca:    { label: "Pij!",           emoji: "🍺", color: "#ff6b6b", colorDeep: "#e03131" },
 };
 
 /* ---- Monetization config ----

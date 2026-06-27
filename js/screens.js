@@ -434,8 +434,8 @@ export function GameScreen(ctx) {
       setTimeout(() => ctx.showPaywall("teaser_card", advance), 350);
     } else {
       cardEl.classList.remove("teaser");
-      const t = CARD_TYPES[c.type];
-      cardEl.style.background = diff.color;
+      const t = CARD_TYPES[c.type] || CARD_TYPES.izziv;
+      cardEl.style.background = t.color;
       cardEl.innerHTML = `
         <span class="type-tag">${t.emoji} ${t.label}</span>
         <div class="card-text">${esc(c.text)}</div>
@@ -1006,8 +1006,13 @@ export function CustomCardsScreen(ctx) {
     ccList.innerHTML = data.map((c) => {
       const t = CARD_TYPES[c.type];
       const sipsStr = c.sips ? ` · ${c.sips} ${c.sips === 1 ? "požirek" : "požirkov"}` : "";
+      const enabled = !ctx.isCardDisabled(c.id);
       return `
-        <div class="custom-card-item">
+        <div class="custom-card-item ${enabled ? "" : "cc-disabled"}" data-id="${esc(c.id)}">
+          <label class="cc-toggle" title="${enabled ? "Vključena v igro" : "Izključena iz igre"}">
+            <input type="checkbox" class="cc-chk" data-toggle="${esc(c.id)}" ${enabled ? "checked" : ""}>
+            <span class="cc-track"></span>
+          </label>
           <div style="flex:1">
             <div class="cc-text">${esc(c.text)}</div>
             <div class="cc-meta">${t ? t.emoji + " " + t.label : c.type}${sipsStr}</div>
@@ -1017,6 +1022,13 @@ export function CustomCardsScreen(ctx) {
       `;
     }).join("");
 
+    ccList.querySelectorAll("[data-toggle]").forEach((chk) => {
+      chk.onchange = () => {
+        ctx.toggleCardDisabled(chk.dataset.toggle);
+        const row = ccList.querySelector(`[data-id="${chk.dataset.toggle}"]`);
+        if (row) row.classList.toggle("cc-disabled", !chk.checked);
+      };
+    });
     ccList.querySelectorAll("[data-del]").forEach((b) => {
       b.onclick = async () => {
         b.disabled = true;

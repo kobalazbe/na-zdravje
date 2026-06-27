@@ -1,4 +1,4 @@
-const CACHE = 'na-zdravje-v1';
+const CACHE = 'na-zdravje-v2';
 const PRECACHE = [
   '/index.html',
   '/landing.html',

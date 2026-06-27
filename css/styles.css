@@ -716,13 +716,28 @@ body {
 
 /* ---- custom cards screen ---- */
 .custom-card-item {
-  display: flex; align-items: flex-start; gap: 10px;
+  display: flex; align-items: center; gap: 10px;
   padding: 12px 14px; background: var(--white);
   border-radius: var(--radius); box-shadow: var(--shadow-soft);
-  margin-bottom: 8px;
+  margin-bottom: 8px; transition: opacity .2s;
 }
-.cc-text { flex: 1; font-size: .95rem; color: var(--ink); line-height: 1.4; }
+.custom-card-item.cc-disabled { opacity: .45; }
+.cc-text { font-size: .95rem; color: var(--ink); line-height: 1.4; }
 .cc-meta { font-size: .78rem; font-weight: 700; color: var(--ink-soft); margin-top: 3px; }
+/* per-card enable toggle */
+.cc-toggle { position: relative; flex-shrink: 0; width: 36px; height: 20px; cursor: pointer; }
+.cc-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.cc-track {
+  position: absolute; inset: 0; border-radius: 999px;
+  background: #ddd; transition: background .2s;
+}
+.cc-track::after {
+  content: ""; position: absolute; top: 3px; left: 3px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+.cc-toggle input:checked + .cc-track { background: #38d9a9; }
+.cc-toggle input:checked + .cc-track::after { transform: translateX(16px); }
 .cc-del {
   background: none; border: none; cursor: pointer; font-size: 1.1rem;
   padding: 2px 6px; border-radius: 8px; color: var(--ink-soft);
