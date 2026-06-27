@@ -141,7 +141,14 @@ const ctx = {
   startCheckout(tier) {
     track("checkout_start", { tier });
     const plan = PRICING.find((p) => p.id === tier);
-    if (plan && plan.link) { window.open(plan.link, "_blank", "noopener"); return true; }
+    if (plan && plan.link) {
+      const email = ctx.currentUser?.email || "";
+      const url = email
+        ? `${plan.link}?prefilled_email=${encodeURIComponent(email)}`
+        : plan.link;
+      window.open(url, "_blank", "noopener");
+      return true;
+    }
     return false;
   },
   redeemCode(code) {
@@ -236,6 +243,11 @@ async function boot() {
     return;
   }
 
+  // Returning from Stripe checkout — strip the param then verify
+  const params = new URLSearchParams(window.location.search);
+  const paymentReturn = params.get("payment") === "success";
+  if (paymentReturn) history.replaceState(null, "", window.location.pathname);
+
   const session = await getSession();
 
   if (!session) {
@@ -249,8 +261,40 @@ async function boot() {
 
   sanitizeStart();
   render();
-
   entitlement.refresh();
+
+  // After a Stripe redirect: give the webhook ~3 s to land, then re-check
+  if (paymentReturn) {
+    setTimeout(async () => {
+      const { data: fresh } = await getProfile(session.user.id);
+      if (!fresh) return;
+      const wasFreeBefore = !entitlement.isPremium();
+      entitlement.setFromProfile(fresh);
+      if (wasFreeBefore && entitlement.isPremium()) {
+        audio.success();
+        confetti.burst(120, 0.3);
+        render(); // rerender home with premium badge
+        openModal((c) => _paymentSuccessModal(c));
+      }
+    }, 3000);
+  }
+}
+
+function _paymentSuccessModal(ctx) {
+  const node = document.createElement("div");
+  node.className = "modal-backdrop";
+  node.innerHTML = `
+    <div class="modal">
+      <div class="big-emoji">🎉</div>
+      <h2>Dobrodošel v Premium!</h2>
+      <p>Tvoj dostop je aktiviran. Uživaj v vseh vsebinah!</p>
+      <div class="stack">
+        <button class="btn" data-act="ok">Začni igrati 🚀</button>
+      </div>
+    </div>
+  `;
+  node.querySelector('[data-act="ok"]').onclick = () => { ctx.audio.pop(); ctx.closeModal(); };
+  return node;
 }
 
 boot();

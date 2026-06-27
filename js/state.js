@@ -63,9 +63,9 @@ export const FREE_TEASER_EVERY = 8;
 /* Premium tiers shown in the paywall (Stripe Prices wired in Phase 1).
    `link` = Stripe Payment Link / Checkout URL (placeholder until Phase 1). */
 export const PRICING = [
-  { id: "pass",    emoji: "🎟️", name: "Žur Pass",  price: "2,49 €",  sub: "48 ur vsega",            link: "" },
-  { id: "monthly", emoji: "🍻", name: "Mesečno",   price: "3,99 €",  sub: "/mesec",                 link: "" },
-  { id: "yearly",  emoji: "👑", name: "Letno",     price: "19,99 €", sub: "/leto · prihraniš 58 %", link: "", best: true },
+  { id: "pass",    emoji: "🎟️", name: "Žur Pass",  price: "2,49 €",  sub: "48 ur vsega",            link: "https://buy.stripe.com/test_14AaEWgEL8gxcY54krcIE03" },
+  { id: "monthly", emoji: "🍻", name: "Mesečno",   price: "3,99 €",  sub: "/mesec",                 link: "https://buy.stripe.com/test_8x27sKgELfIZ0bj18fcIE04" },
+  { id: "yearly",  emoji: "👑", name: "Letno",     price: "19,99 €", sub: "/leto · prihraniš 58 %", link: "https://buy.stripe.com/test_9B6fZgbkrdAR8HP6szcIE05", best: true },
 ];
 
 function freshState() {
