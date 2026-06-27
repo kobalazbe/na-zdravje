@@ -323,32 +323,12 @@ export function GameScreen(ctx) {
   if (!state.current) ctx.drawCard();
 
   let revealed = true;
-  let shakeCleanup = null;
-
-  function setupShake(cb) {
-    if (!window.DeviceMotionEvent) return () => {};
-    const THRESHOLD = 22;
-    let last = 0;
-    const handler = e => {
-      const a = e.accelerationIncludingGravity;
-      if (!a) return;
-      const mag = Math.sqrt(a.x ** 2 + a.y ** 2 + a.z ** 2);
-      if (mag > THRESHOLD && Date.now() - last > 1000) {
-        last = Date.now();
-        cb();
-      }
-    };
-    window.addEventListener('devicemotion', handler);
-    return () => window.removeEventListener('devicemotion', handler);
-  }
 
   function doReveal() {
     if (revealed) return;
     revealed = true;
-    if (shakeCleanup) { shakeCleanup(); shakeCleanup = null; }
-    ctx.setTiltCleanup(null);
     cardEl.onclick = null;
-    renderCard(true);
+    requestAnimationFrame(() => renderCard(true));
   }
 
   const node = el(`
@@ -390,32 +370,13 @@ export function GameScreen(ctx) {
     if (!revealed) {
       cardEl.className = 'card card-back';
       cardEl.style.background = '';
-      const isIOS = typeof DeviceMotionEvent !== 'undefined'
-        && typeof DeviceMotionEvent.requestPermission === 'function';
       cardEl.innerHTML = `
         <div class="cb-logo">NA ZDRAVJE! 🍻</div>
         <div class="cb-body">
           <div class="cb-hint">👆 Tapni kartico za razkritje</div>
-          <div class="cb-or">ali</div>
-          <div class="cb-hint">📳 Stresite telefon</div>
-          ${isIOS ? '<button id="shakePermBtn">Aktiviraj stresanje 📳</button>' : ''}
         </div>`;
       actions.innerHTML = '';
       cardEl.onclick = () => doReveal();
-
-      if (!isIOS && window.DeviceMotionEvent) {
-        shakeCleanup = setupShake(doReveal);
-        ctx.setTiltCleanup(() => { if (shakeCleanup) { shakeCleanup(); shakeCleanup = null; } });
-      }
-      if (isIOS) {
-        document.getElementById('shakePermBtn')?.addEventListener('click', async () => {
-          const r = await DeviceMotionEvent.requestPermission();
-          if (r === 'granted') {
-            shakeCleanup = setupShake(doReveal);
-            ctx.setTiltCleanup(() => { if (shakeCleanup) { shakeCleanup(); shakeCleanup = null; } });
-          }
-        });
-      }
       renderScores();
       return;
     }
