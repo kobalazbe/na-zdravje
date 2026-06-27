@@ -32,15 +32,25 @@ export function HomeScreen(ctx) {
   ctx.setTheme("#ff6b6b", "#e84b4b");
   const premium = ctx.isPremium();
   const hrs = ctx.passHoursLeft();
-  const premiumLine = premium
-    ? (hrs ? `<span class="super-badge">🎟️ Žur Pass aktiven · še ${hrs} h</span>`
-           : `<span class="super-badge">👑 Premium aktiven</span>`)
-    : `<button class="btn btn-ghost" data-act="premium">👑 Odkleni Premium</button>`;
   const userEmail = ctx.currentUser?.email || "";
+
+  const premiumBlock = premium
+    ? `<div class="premium-status">
+        <span class="ps-crown">${hrs ? "🎟️" : "👑"}</span>
+        <div class="ps-text">
+          <div class="ps-title">${hrs ? `Žur Pass · še ${hrs} h` : "Premium aktiven"}</div>
+          <div class="ps-sub">Pikantno · vse težavnosti · 100+ kart</div>
+        </div>
+        <button class="ps-refresh" data-act="refresh">↺ Osveži</button>
+       </div>`
+    : `<button class="btn btn-ghost" data-act="premium">👑 Odkleni Premium</button>`;
 
   const node = el(`
     <section class="screen center-col">
-      ${userEmail ? `<div class="user-row"><span>👤 ${esc(userEmail)}</span><button class="btn-logout" data-act="logout">Odjava</button></div>` : ""}
+      ${userEmail ? `<div class="user-row${premium ? " is-premium" : ""}">
+        <span>${premium ? "👑" : "👤"} ${esc(userEmail)}</span>
+        <button class="btn-logout" data-act="logout">Odjava</button>
+      </div>` : ""}
       <div class="grow"></div>
       <div class="stack" style="align-items:center;gap:6px">
         <div class="logo">NA ZDRAVJE!<span class="cheer">🍻 pivska igra 🍻</span></div>
@@ -51,11 +61,12 @@ export function HomeScreen(ctx) {
         <button class="btn btn-lg" data-act="start">Začni igro 🎲</button>
         <button class="btn btn-ghost" data-act="how">Kako se igra?</button>
         ${premium ? `<button class="btn btn-ghost" data-act="cards">🃏 Moje kartice</button>` : ""}
-        <div class="text-center" style="margin-top:6px">${premiumLine}</div>
+        <div style="margin-top:8px">${premiumBlock}</div>
       </div>
       <p class="hint" style="margin-top:18px">Pij odgovorno. Igra je namenjena odraslim. 🔞</p>
     </section>
   `);
+
   node.querySelector('[data-act="start"]').onclick = () => { ctx.audio.pop(); ctx.go("setup"); };
   node.querySelector('[data-act="how"]').onclick = () => { ctx.audio.pop(); ctx.showHowTo(); };
   const premBtn = node.querySelector('[data-act="premium"]');
@@ -64,6 +75,13 @@ export function HomeScreen(ctx) {
   if (logoutBtn) logoutBtn.onclick = () => ctx.signOut();
   const cardsBtn = node.querySelector('[data-act="cards"]');
   if (cardsBtn) cardsBtn.onclick = () => { ctx.audio.pop(); ctx.manageCustomCards(); };
+  const refreshBtn = node.querySelector('[data-act="refresh"]');
+  if (refreshBtn) refreshBtn.onclick = async () => {
+    refreshBtn.textContent = "…";
+    refreshBtn.disabled = true;
+    await ctx.refreshEntitlement();
+    ctx.rerender();
+  };
   return node;
 }
 
@@ -309,7 +327,7 @@ export function GameScreen(ctx) {
       <div class="game-head">
         <button class="btn icon-btn btn-ghost" data-act="quit" aria-label="Konec">⏹</button>
         <div>
-          <div class="turn-label">${mode.emoji} ${mode.name} • ${diff.name}</div>
+          <div class="turn-label">${mode.emoji} ${mode.name} • ${diff.name}${ctx.isPremium() ? '<span class="premium-chip">👑 PRO</span>' : ""}</div>
           <div class="turn-name" id="turnName"></div>
         </div>
         <span class="round" id="roundLabel"></span>

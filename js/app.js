@@ -157,7 +157,13 @@ const ctx = {
     if (r.ok) { audio.success(); confetti.burst(110, 0.3); }
     return r;
   },
-  async refreshEntitlement() { return entitlement.refresh(); },
+  async refreshEntitlement() {
+    if (ctx.currentUser) {
+      const { data: profile } = await getProfile(ctx.currentUser.id);
+      if (profile) entitlement.setFromProfile(profile);
+    }
+    return entitlement.refresh();
+  },
 
   // ---- custom cards ----
   getCustomCards(mode, difficulty) {

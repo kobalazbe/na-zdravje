@@ -559,6 +559,41 @@ body {
 }
 .btn-forgot:hover { color: var(--accent); }
 
+/* ---- premium badge (home screen) ---- */
+.premium-status {
+  display: flex; align-items: center; gap: 10px;
+  background: linear-gradient(135deg, #ffd43b 0%, #ff922b 100%);
+  border-radius: var(--radius); padding: 12px 16px;
+  box-shadow: 0 4px 16px rgba(255, 180, 0, .35);
+  margin-bottom: 4px;
+}
+.premium-status .ps-crown { font-size: 1.8rem; line-height: 1; }
+.premium-status .ps-text { flex: 1; }
+.premium-status .ps-title {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: 1rem; color: #fff; letter-spacing: .02em;
+}
+.premium-status .ps-sub { font-size: .78rem; color: rgba(255,255,255,.85); font-weight: 600; margin-top: 1px; }
+.premium-status .ps-refresh {
+  background: rgba(255,255,255,.25); border: none; cursor: pointer;
+  font-size: .78rem; font-weight: 700; color: #fff;
+  font-family: var(--font-body); padding: 4px 10px;
+  border-radius: 999px; transition: background .15s; white-space: nowrap;
+}
+.premium-status .ps-refresh:hover { background: rgba(255,255,255,.4); }
+
+/* premium crown chip in game header */
+.premium-chip {
+  font-size: .72rem; font-weight: 800; font-family: var(--font-display);
+  background: linear-gradient(135deg, #ffd43b, #ff922b);
+  color: #fff; padding: 2px 8px; border-radius: 999px;
+  letter-spacing: .04em; vertical-align: middle; margin-left: 4px;
+}
+
+/* gold tint on user-row when premium */
+.user-row.is-premium { color: #b37400; }
+.user-row.is-premium .btn-logout { color: #b37400; }
+
 /* ---- clink overlay (start animation) ---- */
 .clink-overlay {
   position: fixed; inset: 0; z-index: 200;
