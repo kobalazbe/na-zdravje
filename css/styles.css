@@ -283,7 +283,7 @@ body {
 .turn-name { font-family: var(--font-display); font-weight: 800; font-size: 1.35rem; }
 .turn-label { font-size: .8rem; color: var(--ink-soft); }
 
-.card-area { flex: 1; display: grid; place-items: center; perspective: 1200px; padding: 14px 0; }
+.card-area { flex: 1; display: grid; place-items: center; perspective: 1200px; padding: 8px 0; }
 
 .card {
   width: 100%;
@@ -361,12 +361,13 @@ body {
   font-size: 1.05rem;
 }
 
-.game-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+.game-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
 
 /* score chips */
 .scoreboard {
-  display: flex; gap: 10px; overflow-x: auto; padding: 6px 12px 4px;
+  display: flex; gap: 10px; overflow-x: auto; padding: 4px 12px 2px;
   scrollbar-width: none;
+  margin-top: 6px;
 }
 .scoreboard::-webkit-scrollbar { display: none; }
 .score-chip {
