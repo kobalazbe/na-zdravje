@@ -379,7 +379,7 @@ body {
 
 /* score chips */
 .scoreboard {
-  display: flex; gap: 8px; overflow-x: auto; padding: 6px 2px 2px;
+  display: flex; gap: 10px; overflow-x: auto; padding: 6px 12px 4px;
   scrollbar-width: none;
 }
 .scoreboard::-webkit-scrollbar { display: none; }
