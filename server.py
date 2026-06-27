@@ -9,6 +9,9 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *args):
         pass
 
+class ThreadingHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+    daemon_threads = True
+
 PORT = 5544
-with socketserver.TCPServer(("", PORT), NoCacheHandler) as httpd:
+with ThreadingHTTPServer(("", PORT), NoCacheHandler) as httpd:
     httpd.serve_forever()

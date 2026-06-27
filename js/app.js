@@ -258,6 +258,20 @@ function sanitizeStart() {
 
 /* ---- boot: check session first, then render ---- */
 async function boot() {
+  // Surface OAuth provider errors (Google sends ?error=… or #error=…) instead
+  // of silently bouncing to a blank/login screen.
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const qParams    = new URLSearchParams(window.location.search);
+  const oauthError = qParams.get("error_description") || qParams.get("error")
+                  || hashParams.get("error_description") || hashParams.get("error");
+  if (oauthError) {
+    history.replaceState(null, "", window.location.pathname);
+    showLogin();
+    const errEl = document.getElementById("auth-err");
+    if (errEl) { errEl.textContent = "Google prijava ni uspela: " + decodeURIComponent(oauthError); }
+    return;
+  }
+
   if (window.location.hash.includes("type=recovery")) {
     history.replaceState(null, "", window.location.pathname);
     await getSession();
@@ -271,7 +285,12 @@ async function boot() {
   const paymentReturn = params.get("payment") === "success";
   if (paymentReturn) history.replaceState(null, "", window.location.pathname);
 
-  const session = await getSession();
+  let session = null;
+  try {
+    session = await getSession();
+  } catch (e) {
+    console.error("getSession failed:", e);
+  }
 
   // Returning from Google OAuth — supabase consumed the code; tidy the URL
   if (params.has("code") || window.location.hash.includes("access_token")) {
