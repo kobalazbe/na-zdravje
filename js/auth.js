@@ -20,7 +20,14 @@ export async function signIn(email, password) {
 }
 
 export async function signUp(email, password) {
-  return supabase.auth.signUp({ email, password })
+  return supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      // Where the "Confirm your email" link sends the user back to
+      emailRedirectTo: window.location.origin + window.location.pathname,
+    },
+  })
 }
 
 export async function signInWithGoogle() {

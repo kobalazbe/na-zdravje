@@ -907,11 +907,14 @@ export function LoginScreen(ctx, initialMode = "login") {
     }
 
     if (mode === "signup" && data.user && !data.session) {
-      errEl.style.color = "#38d9a9";
-      errEl.textContent = "✅ Račun ustvarjen! Prijavi se.";
-      submitEl.disabled = false;
-      submitEl.textContent = "Ustvari račun";
+      // Email confirmation is on: Supabase returns a user but no session until
+      // the user clicks the link we just emailed them.
+      passEl.value = "";
       setMode("login");
+      errEl.style.color = "#38d9a9";
+      errEl.innerHTML = `✅ Račun ustvarjen! Poslali smo ti potrditveno e-pošto na <b>${esc(email)}</b>.<br>Klikni povezavo v njej, nato se prijavi.`;
+      submitEl.disabled = false;
+      submitEl.textContent = "Prijava";
       return;
     }
 

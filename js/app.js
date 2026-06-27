@@ -295,9 +295,18 @@ async function boot() {
     history.replaceState(null, "", window.location.pathname);
     showLogin();
     const errEl = document.getElementById("auth-err");
-    if (errEl) { errEl.textContent = "Google prijava ni uspela: " + decodeURIComponent(oauthError); }
+    if (errEl) {
+      const raw = decodeURIComponent(oauthError);
+      errEl.textContent = /expired|invalid/i.test(raw)
+        ? "Povezava ni veljavna ali je potekla. Registriraj se znova."
+        : "Prijava ni uspela: " + raw;
+    }
     return;
   }
+
+  // Did the user just click the email-confirmation link? (implicit flow puts
+  // type=signup in the hash; PKCE returns a ?code we exchange below.)
+  const confirmedSignup = hashParams.get("type") === "signup";
 
   if (window.location.hash.includes("type=recovery")) {
     history.replaceState(null, "", window.location.pathname);
@@ -337,10 +346,34 @@ async function boot() {
   render();
   entitlement.refresh();
 
+  // Fresh from confirming their email — welcome them in.
+  if (confirmedSignup) {
+    audio.success();
+    confetti.burst(110, 0.3);
+    openModal((c) => _welcomeModal(c));
+  }
+
   // After a Stripe redirect: poll with back-off until the webhook lands
   if (paymentReturn && !entitlement.isPremium()) {
     _pollUntilPremium(session.user.id);
   }
+}
+
+function _welcomeModal(ctx) {
+  const node = document.createElement("div");
+  node.className = "modal-backdrop";
+  node.innerHTML = `
+    <div class="modal">
+      <div class="big-emoji">🎉</div>
+      <h2>E-pošta potrjena!</h2>
+      <p>Tvoj račun je aktiviran. Dobrodošel — na zdravje! 🍻</p>
+      <div class="stack">
+        <button class="btn" data-act="ok">Začni 🚀</button>
+      </div>
+    </div>
+  `;
+  node.querySelector('[data-act="ok"]').onclick = () => { ctx.audio.pop(); ctx.closeModal(); };
+  return node;
 }
 
 /* When the user switches back to this tab after paying in Stripe,
