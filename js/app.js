@@ -18,7 +18,7 @@ import {
 } from "./screens.js";
 import {
   getSession, getProfile, signIn, signUp, signOut as authSignOutFn,
-  resetPassword, updatePassword, supabase,
+  resetPassword, updatePassword, signInWithGoogle, supabase,
   getCustomCards, addCustomCard, deleteCustomCard,
 } from "./auth.js";
 
@@ -123,6 +123,7 @@ const ctx = {
   authSignUp: signUp,
   authResetPassword: resetPassword,
   authUpdatePassword: updatePassword,
+  authSignInWithGoogle: signInWithGoogle,
 
   async onAuthSuccess(session) {
     if (!session) session = await getSession();
@@ -271,6 +272,11 @@ async function boot() {
   if (paymentReturn) history.replaceState(null, "", window.location.pathname);
 
   const session = await getSession();
+
+  // Returning from Google OAuth — supabase consumed the code; tidy the URL
+  if (params.has("code") || window.location.hash.includes("access_token")) {
+    history.replaceState(null, "", window.location.pathname);
+  }
 
   if (!session) {
     showLogin();

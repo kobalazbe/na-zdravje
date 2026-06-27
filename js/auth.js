@@ -23,6 +23,13 @@ export async function signUp(email, password) {
   return supabase.auth.signUp({ email, password })
 }
 
+export async function signInWithGoogle() {
+  return supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin + window.location.pathname },
+  })
+}
+
 export async function signOut() {
   return supabase.auth.signOut()
 }

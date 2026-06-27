@@ -755,6 +755,11 @@ export function LoginScreen(ctx, initialMode = "login") {
       <div class="auth-card">
         <h2 id="auth-title" style="font-family:var(--font-display);font-weight:800;font-size:1.5rem;text-align:center;margin-bottom:18px">Prijava</h2>
         <div class="stack" style="gap:10px">
+          <button class="btn-google" id="auth-google">
+            <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.72a5.4 5.4 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
+            <span>Nadaljuj z Google</span>
+          </button>
+          <div class="auth-divider" id="auth-divider"><span>ali</span></div>
           <input class="input" id="auth-email" type="email" placeholder="E-pošta" autocomplete="email" inputmode="email" />
           <input class="input" id="auth-pass" type="password" placeholder="Geslo (min. 6 znakov)" autocomplete="current-password" />
           <button class="btn btn-lg" id="auth-submit">Prijava</button>
@@ -775,6 +780,8 @@ export function LoginScreen(ctx, initialMode = "login") {
   const errEl    = node.querySelector("#auth-err");
   const toggleEl = node.querySelector("#auth-toggle");
   const forgotEl = node.querySelector("#auth-forgot");
+  const googleEl  = node.querySelector("#auth-google");
+  const dividerEl = node.querySelector("#auth-divider");
 
   function setMode(m) {
     mode = m;
@@ -787,6 +794,10 @@ export function LoginScreen(ctx, initialMode = "login") {
     passEl.style.display  = (isForgot) ? "none" : "";
     forgotEl.style.display = (isForgot || isReset) ? "none" : "";
     toggleEl.style.display = (isForgot || isReset) ? "none" : "";
+    // Google sign-in only makes sense for login/signup, not password flows
+    const showGoogle = (m === "login" || m === "signup");
+    googleEl.style.display  = showGoogle ? "" : "none";
+    dividerEl.style.display = showGoogle ? "" : "none";
 
     if (m === "login") {
       titleEl.textContent  = "Prijava";
@@ -816,6 +827,19 @@ export function LoginScreen(ctx, initialMode = "login") {
 
   toggleEl.onclick = () => setMode(mode === "login" ? "signup" : "login");
   forgotEl.onclick = () => setMode("forgot");
+
+  googleEl.onclick = async () => {
+    errEl.textContent = "";
+    googleEl.disabled = true;
+    googleEl.classList.add("is-loading");
+    const { error } = await ctx.authSignInWithGoogle();
+    // On success the browser redirects to Google; we only get here on error.
+    if (error) {
+      googleEl.disabled = false;
+      googleEl.classList.remove("is-loading");
+      errEl.textContent = "Napaka pri prijavi z Google: " + error.message;
+    }
+  };
 
   submitEl.onclick = async () => {
     const email = emailEl.value.trim();
