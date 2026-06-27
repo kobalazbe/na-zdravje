@@ -323,47 +323,10 @@ export function GameScreen(ctx) {
   if (!state.current) ctx.drawCard();
 
   let revealed = true;
-  let shakeCleanup = null;
-  let motionGranted = false; // persists across turns within one game session
 
-  function setupShake(cb) {
-    if (!window.DeviceMotionEvent) return () => {};
-    let last = 0;
-    const handler = e => {
-      const hasClean = e.acceleration && e.acceleration.x !== null;
-      const a = hasClean ? e.acceleration : e.accelerationIncludingGravity;
-      if (!a) return;
-      const x = a.x || 0, y = a.y || 0, z = a.z || 0;
-      const mag = Math.sqrt(x * x + y * y + z * z);
-      const threshold = hasClean ? 6 : 12;
-      if (mag > threshold && Date.now() - last > 800) {
-        last = Date.now();
-        cb();
-      }
-    };
-    window.addEventListener('devicemotion', handler);
-    return () => window.removeEventListener('devicemotion', handler);
-  }
-
-  async function doReveal() {
+  function doReveal() {
     if (revealed) return;
-    // On iOS, request motion permission using the tap as the user gesture.
-    // Only runs once; subsequent calls skip this block.
-    if (!motionGranted) {
-      const needsPerm = typeof DeviceMotionEvent !== 'undefined'
-        && typeof DeviceMotionEvent.requestPermission === 'function';
-      if (needsPerm) {
-        try {
-          const r = await DeviceMotionEvent.requestPermission();
-          if (r === 'granted') motionGranted = true;
-        } catch (_) {}
-      } else if (window.DeviceMotionEvent) {
-        motionGranted = true; // Android: no permission needed
-      }
-    }
     revealed = true;
-    if (shakeCleanup) { shakeCleanup(); shakeCleanup = null; }
-    ctx.setTiltCleanup(null);
     cardEl.onclick = null;
     requestAnimationFrame(() => renderCard(true));
   }
@@ -411,15 +374,9 @@ export function GameScreen(ctx) {
         <div class="cb-logo">NA ZDRAVJE! 🍻</div>
         <div class="cb-body">
           <div class="cb-hint">👆 Tapni kartico za razkritje</div>
-          ${motionGranted ? '<div class="cb-or">ali</div><div class="cb-hint">📳 Stresite telefon</div>' : ''}
         </div>`;
       actions.innerHTML = '';
       cardEl.onclick = () => doReveal();
-
-      if (motionGranted && window.DeviceMotionEvent) {
-        shakeCleanup = setupShake(doReveal);
-        ctx.setTiltCleanup(() => { if (shakeCleanup) { shakeCleanup(); shakeCleanup = null; } });
-      }
       renderScores();
       return;
     }
