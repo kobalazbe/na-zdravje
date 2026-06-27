@@ -845,7 +845,7 @@ body {
   max-width: 1060px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr 1.5fr;
   gap: 40px;
   padding-bottom: 40px;
   border-bottom: 1px solid rgba(255,255,255,.1);
@@ -888,6 +888,23 @@ body {
 }
 .footer-notice { font-size: .82rem; opacity: .55; }
 .footer-copy { font-size: .8rem; opacity: .45; }
+
+.footer-social-link {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: rgba(255,255,255,.6);
+  text-decoration: none;
+  font-size: .93rem;
+  transition: color .15s, transform .15s;
+}
+.footer-social-link:hover { color: var(--coral); transform: translateX(3px); }
+.social-ico {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  fill: currentColor;
+}
 
 /* ===========================================================
    HERO ENHANCEMENTS
