@@ -758,6 +758,32 @@ body {
 .podium-row { animation: podium-in .4s ease both; }
 @keyframes podium-in { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
 
+/* ---- global leaderboard widget ---- */
+.leaderboard-widget {
+  width: 100%; background: rgba(255,255,255,.08);
+  border-radius: 18px; padding: 14px 16px;
+  box-sizing: border-box;
+}
+.lb-title {
+  font-family: var(--font-display); font-weight: 800; font-size: 1rem;
+  color: rgba(255,255,255,.9); margin-bottom: 10px; text-align: center;
+}
+.lb-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 4px; border-bottom: 1px solid rgba(255,255,255,.07);
+  font-family: var(--font-display); font-weight: 600; font-size: .9rem;
+  animation: podium-in .35s ease both;
+}
+.lb-row:last-child { border-bottom: none; }
+.lb-rank { width: 28px; text-align: center; font-size: 1rem; }
+.lb-emoji { font-size: 1.1rem; }
+.lb-name { flex: 1; color: rgba(255,255,255,.9); }
+.lb-sips { color: rgba(255,255,255,.6); font-size: .85rem; }
+.lb-loading, .lb-empty {
+  text-align: center; color: rgba(255,255,255,.45);
+  font-family: var(--font-display); font-size: .85rem; padding: 6px 0;
+}
+
 /* ---- tilt hint (mode screen) ---- */
 .tilt-hint {
   text-align: center; color: var(--ink-soft); font-size: .9rem;

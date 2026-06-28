@@ -21,6 +21,7 @@ import {
   resetPassword, updatePassword, signInWithGoogle, displayName, supabase,
   getCustomCards, addCustomCard, deleteCustomCard,
 } from "./auth.js";
+import { submitResults } from "./leaderboard.js";
 
 const root = document.getElementById("app");
 let modalNode = null;
@@ -63,6 +64,9 @@ const ctx = {
 
   // navigation
   go(screen) {
+    if (screen === "summary" && state.sessionId) {
+      submitResults(state.players, state.sessionId);
+    }
     state.screen = screen;
     save();
     render();
@@ -103,6 +107,7 @@ const ctx = {
     }
     state.deck = buildDeck(state.mode, state.difficulty, state.includeDrinks);
     state.current = null;
+    state.sessionId = crypto.randomUUID();
     drawCard(state);
     closeModal();
     showClinkAnimation(() => ctx.go("game"));
