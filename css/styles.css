@@ -424,6 +424,26 @@ body {
 .modal .big-emoji { font-size: 3.2rem; }
 .modal h2 { font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; margin: 8px 0; }
 .modal p { color: var(--ink-soft); margin-bottom: 18px; }
+.settings-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(255,255,255,.07); border-radius: 14px;
+  padding: 14px 16px; gap: 12px; margin: 14px 0 0;
+  font-family: var(--font-display); font-weight: 600; font-size: .95rem;
+}
+.toggle-btn {
+  flex-shrink: 0;
+  padding: 7px 18px; border-radius: 999px; border: none; cursor: pointer;
+  font-family: var(--font-display); font-weight: 700; font-size: .85rem;
+  background: rgba(255,255,255,.15); color: rgba(255,255,255,.6);
+  transition: background .18s, color .18s;
+}
+.toggle-btn.on {
+  background: #38d9a9; color: #fff;
+}
+.btn-danger {
+  background: #ff6b6b;
+  box-shadow: 0 4px 0 #e03131;
+}
 
 /* ===========================================================
    Summary

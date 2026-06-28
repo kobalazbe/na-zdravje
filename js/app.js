@@ -13,7 +13,7 @@ import * as entitlement from "./entitlement.js";
 import { track } from "./analytics.js";
 import {
   HomeScreen, SetupScreen, ModeScreen, GameScreen, SummaryScreen,
-  AdultGateModal, QuitModal, HowToModal, PaywallModal, LoginScreen,
+  AdultGateModal, QuitModal, GameSettingsModal, HowToModal, PaywallModal, LoginScreen,
   CustomCardsScreen,
 } from "./screens.js";
 import {
@@ -238,6 +238,7 @@ const ctx = {
   // modals
   showAdultGate() { openModal(AdultGateModal); },
   confirmQuit() { openModal(QuitModal); },
+  openGameSettings() { openModal(GameSettingsModal); },
   showHowTo() { openModal(HowToModal); },
   closeModal,
 };
