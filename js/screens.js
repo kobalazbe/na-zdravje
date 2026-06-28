@@ -356,7 +356,7 @@ export function GameScreen(ctx) {
     typeof DeviceMotionEvent.requestPermission === "function";  // iOS 13+
 
   function flipByMotion() {
-    if (revealed || state.screen !== "game") return false;
+    if (revealed || state.screen !== "game" || !state.shakeEnabled) return false;
     ctx.audio.pop();
     doReveal();
     return true;
@@ -427,7 +427,7 @@ export function GameScreen(ctx) {
   const node = el(`
     <section class="screen">
       <div class="game-head">
-        <button class="btn icon-btn btn-ghost" data-act="quit" aria-label="Konec">⏹</button>
+        <button class="btn icon-btn btn-ghost" data-act="settings" aria-label="Nastavitve">⚙️</button>
         <div>
           <div class="turn-label">${mode.emoji} ${mode.name} • ${diff.name}${ctx.isPremium() ? '<span class="premium-chip">👑 PRO</span>' : ""}</div>
           <div class="turn-name" id="turnName"></div>
@@ -617,7 +617,7 @@ export function GameScreen(ctx) {
     renderCard(false);
   }
 
-  node.querySelector('[data-act="quit"]').onclick = () => { ctx.audio.pop(); ctx.confirmQuit(); };
+  node.querySelector('[data-act="settings"]').onclick = () => { ctx.audio.pop(); ctx.openGameSettings(); };
 
   renderCard(false);
   return node;
@@ -718,6 +718,40 @@ export function AdultGateModal(ctx) {
     ctx.closeModal(); ctx.startGame();
   };
   node.querySelector('[data-act="no"]').onclick = () => { ctx.audio.pop(); ctx.closeModal(); };
+  return node;
+}
+
+export function GameSettingsModal(ctx) {
+  const { state } = ctx;
+
+  function render() {
+    const shakeOn = state.shakeEnabled;
+    node.querySelector('.modal').innerHTML = `
+      <div class="big-emoji">⚙️</div>
+      <h2>Nastavitve</h2>
+      <div class="settings-row">
+        <span>📳 Stresi / nagni za razkritje</span>
+        <button class="toggle-btn ${shakeOn ? "on" : ""}" data-act="toggle-shake">
+          ${shakeOn ? "Vključeno" : "Izključeno"}
+        </button>
+      </div>
+      <div class="stack" style="margin-top:18px">
+        <button class="btn btn-danger" data-act="end">Končaj igro ⏹</button>
+        <button class="btn btn-ghost" data-act="cancel">Nadaljuj igro</button>
+      </div>
+    `;
+    node.querySelector('[data-act="toggle-shake"]').onclick = () => {
+      ctx.audio.pop();
+      state.shakeEnabled = !state.shakeEnabled;
+      ctx.save();
+      render();
+    };
+    node.querySelector('[data-act="end"]').onclick = () => { ctx.audio.pop(); ctx.closeModal(); ctx.go("summary"); };
+    node.querySelector('[data-act="cancel"]').onclick = () => { ctx.audio.pop(); ctx.closeModal(); };
+  }
+
+  const node = el(`<div class="modal-backdrop"><div class="modal"></div></div>`);
+  render();
   return node;
 }
 
