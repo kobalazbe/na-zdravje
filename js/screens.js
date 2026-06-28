@@ -704,7 +704,6 @@ export function PaywallModal(ctx, source = "generic", onDismiss) {
 
         <div class="tier-list">${tiers}</div>
 
-        <button class="btn" data-act="guest-register" style="display:none">📝 Registriraj se za nakup</button>
         <button class="btn" data-act="verify" style="display:none">✓ Plačal sem — preveri dostop</button>
 
         <div class="redeem">
@@ -722,27 +721,14 @@ export function PaywallModal(ctx, source = "generic", onDismiss) {
   const msg = node.querySelector("#redeemMsg");
   const input = node.querySelector("#redeemInput");
   const verifyBtn = node.querySelector('[data-act="verify"]');
-  const guestRegBtn = node.querySelector('[data-act="guest-register"]');
   const isGuest = ctx.isGuest && !ctx.currentUser;
-
-  // Guests can't attach a purchase to an account — offer registration up front.
-  if (isGuest) guestRegBtn.style.display = "";
-  guestRegBtn.onclick = () => {
-    ctx.audio.pop();
-    ctx.closeModal();
-    ctx.exitGuestToLogin("signup"); // keeps their game; they can buy after logging in
-  };
 
   node.querySelectorAll("[data-tier]").forEach((b) => {
     b.onclick = () => {
       ctx.audio.pop();
-      // A guest has no account to attach the purchase to — nudge to register,
-      // but don't kick them out: closing the paywall keeps them playing.
-      if (isGuest) {
-        msg.textContent = "Za nakup Premium se najprej registriraj 👆 (igro lahko nadaljuješ).";
-        guestRegBtn.classList.add("btn-pop");
-        return;
-      }
+      // A guest has no account to attach the purchase to — pop up a prompt to
+      // register / log in. Their game is kept either way.
+      if (isGuest) { ctx.promptGuestRegister(); return; }
       const opened = ctx.startCheckout(b.dataset.tier);
       if (!opened) {
         msg.textContent = "Plačilo pride kmalu. Imaš kodo? Vnesi jo spodaj. 👇";

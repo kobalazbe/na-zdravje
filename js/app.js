@@ -174,6 +174,11 @@ const ctx = {
     ctx.isGuest = false;
     showLogin(mode);
   },
+  // Pop-up shown when a guest taps a premium plan: prompts them to make an
+  // account, then sends them to the auth form (game state is preserved).
+  promptGuestRegister() {
+    openModal((c) => _guestRegisterModal(c));
+  },
 
   // ---- monetization ----
   isPremium: entitlement.isPremium,
@@ -398,6 +403,25 @@ async function boot() {
   if (paymentReturn && !entitlement.isPremium()) {
     _pollUntilPremium(session.user.id);
   }
+}
+
+function _guestRegisterModal(ctx) {
+  const node = document.createElement("div");
+  node.className = "modal-backdrop";
+  node.innerHTML = `
+    <div class="modal">
+      <div class="big-emoji">👑</div>
+      <h2>Za nakup potrebuješ račun</h2>
+      <p>Ustvari račun ali se prijavi, da odkleneš Premium. Tvoja igra se ohrani. 🍻</p>
+      <div class="stack">
+        <button class="btn" data-act="go">Registracija / Prijava →</button>
+        <button class="btn btn-ghost" data-act="later">Mogoče kasneje</button>
+      </div>
+    </div>
+  `;
+  node.querySelector('[data-act="go"]').onclick = () => { ctx.audio.pop(); ctx.exitGuestToLogin("login"); };
+  node.querySelector('[data-act="later"]').onclick = () => { ctx.audio.pop(); ctx.closeModal(); };
+  return node;
 }
 
 function _welcomeModal(ctx) {
