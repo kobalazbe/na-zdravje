@@ -84,6 +84,7 @@ function freshState() {
     cardsPlayed: 0,
     freeDraws: 0,          // free-tier draw counter (drives teaser cadence)
     repeated: false,       // free deck has cycled → show repetition nudge
+    shakeEnabled: true,    // motion-reveal (shake + tilt) on/off
   };
 }
 
