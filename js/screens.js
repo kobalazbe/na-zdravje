@@ -32,7 +32,8 @@ export function HomeScreen(ctx) {
   ctx.setTheme("#ff6b6b", "#e84b4b");
   const premium = ctx.isPremium();
   const hrs = ctx.passHoursLeft();
-  const userName = ctx.currentUser ? ctx.displayName() : "";
+  const isGuest = ctx.isGuest && !ctx.currentUser;
+  const userName = ctx.currentUser ? ctx.displayName() : (isGuest ? "Gost" : "");
 
   const premiumBlock = premium
     ? `<div class="premium-status">
@@ -48,8 +49,8 @@ export function HomeScreen(ctx) {
   const node = el(`
     <section class="screen center-col">
       ${userName ? `<div class="user-row${premium ? " is-premium" : ""}">
-        <span>${premium ? "👑" : "👤"} ${esc(userName)}</span>
-        <button class="btn-logout" data-act="logout">Odjava</button>
+        <span>${premium ? "👑" : (isGuest ? "🎲" : "👤")} ${esc(userName)}</span>
+        <button class="btn-logout" data-act="${isGuest ? "guest-login" : "logout"}">${isGuest ? "Prijava / Registracija" : "Odjava"}</button>
       </div>` : ""}
       <div class="grow"></div>
       <div class="stack" style="align-items:center;gap:6px">
@@ -60,7 +61,7 @@ export function HomeScreen(ctx) {
       <div class="stack" style="width:100%">
         <button class="btn btn-lg" data-act="start">Začni igro 🎲</button>
         <button class="btn btn-ghost" data-act="how">Kako se igra?</button>
-        ${premium ? `<button class="btn btn-ghost" data-act="cards">🃏 Moje kartice</button>` : ""}
+        ${premium && ctx.currentUser ? `<button class="btn btn-ghost" data-act="cards">🃏 Moje kartice</button>` : ""}
         <div style="margin-top:8px">${premiumBlock}</div>
       </div>
       <p class="hint" style="margin-top:18px">Pij odgovorno. Igra je namenjena odraslim. 🔞</p>
@@ -73,6 +74,8 @@ export function HomeScreen(ctx) {
   if (premBtn) premBtn.onclick = () => { ctx.audio.pop(); ctx.showPaywall("home"); };
   const logoutBtn = node.querySelector('[data-act="logout"]');
   if (logoutBtn) logoutBtn.onclick = () => ctx.signOut();
+  const guestLoginBtn = node.querySelector('[data-act="guest-login"]');
+  if (guestLoginBtn) guestLoginBtn.onclick = () => { ctx.audio.pop(); ctx.exitGuestToLogin(); };
   const cardsBtn = node.querySelector('[data-act="cards"]');
   if (cardsBtn) cardsBtn.onclick = () => { ctx.audio.pop(); ctx.manageCustomCards(); };
   const refreshBtn = node.querySelector('[data-act="refresh"]');
@@ -715,6 +718,12 @@ export function PaywallModal(ctx, source = "generic", onDismiss) {
   node.querySelectorAll("[data-tier]").forEach((b) => {
     b.onclick = () => {
       ctx.audio.pop();
+      // A guest has no account to attach the purchase to — send them to register.
+      if (ctx.isGuest && !ctx.currentUser) {
+        msg.textContent = "Za nakup Premium se najprej registriraj. 👇";
+        setTimeout(() => { ctx.closeModal(); ctx.exitGuestToLogin(); }, 1400);
+        return;
+      }
       const opened = ctx.startCheckout(b.dataset.tier);
       if (!opened) {
         msg.textContent = "Plačilo pride kmalu. Imaš kodo? Vnesi jo spodaj. 👇";
@@ -791,6 +800,7 @@ export function LoginScreen(ctx, initialMode = "login") {
           <button class="btn-forgot" id="auth-forgot">Pozabljeno geslo?</button>
         </div>
       </div>
+      <button class="btn-guest" id="auth-guest">🎲 Igraj kot gost</button>
       <div class="grow"></div>
       <p class="hint" style="text-align:center">Pij odgovorno. Igra je namenjena odraslim. 🔞</p>
     </section>
@@ -806,6 +816,7 @@ export function LoginScreen(ctx, initialMode = "login") {
   const forgotEl = node.querySelector("#auth-forgot");
   const googleEl  = node.querySelector("#auth-google");
   const dividerEl = node.querySelector("#auth-divider");
+  const guestEl   = node.querySelector("#auth-guest");
 
   function setMode(m) {
     mode = m;
@@ -820,10 +831,11 @@ export function LoginScreen(ctx, initialMode = "login") {
     emailEl.style.display = (isReset) ? "none" : "";
     forgotEl.style.display = (isForgot || isReset) ? "none" : "";
     toggleEl.style.display = (isForgot || isReset) ? "none" : "";
-    // Google sign-in only makes sense for login/signup, not password flows
+    // Google sign-in + guest play only make sense for login/signup, not password flows
     const showGoogle = (m === "login" || m === "signup");
     googleEl.style.display  = showGoogle ? "" : "none";
     dividerEl.style.display = showGoogle ? "" : "none";
+    guestEl.style.display   = showGoogle ? "" : "none";
 
     if (m === "login") {
       titleEl.textContent  = "Prijava";
@@ -853,6 +865,7 @@ export function LoginScreen(ctx, initialMode = "login") {
 
   toggleEl.onclick = () => setMode(mode === "login" ? "signup" : "login");
   forgotEl.onclick = () => setMode("forgot");
+  guestEl.onclick = () => { ctx.audio.pop(); ctx.continueAsGuest(); };
 
   googleEl.onclick = async () => {
     errEl.textContent = "";

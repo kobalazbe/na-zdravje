@@ -584,6 +584,23 @@ body {
 }
 .btn-forgot:hover { color: var(--accent); }
 
+/* "Play as guest" — quiet alternative under the auth card */
+.btn-guest {
+  margin-top: 16px;
+  background: transparent;
+  border: 2px dashed rgba(255,255,255,.55);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 12px 22px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.btn-guest:hover { background: rgba(255,255,255,.45); border-color: rgba(255,255,255,.9); }
+.btn-guest:active { transform: translateY(1px); }
+
 /* ---- Google sign-in ---- */
 .btn-google {
   display: flex; align-items: center; justify-content: center; gap: 10px;

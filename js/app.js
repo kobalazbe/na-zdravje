@@ -36,6 +36,14 @@ function toggleDisabledId(id) {
   try { localStorage.setItem(CC_DISABLED_KEY, JSON.stringify([...s])); } catch (_) {}
 }
 
+// Guest mode: play without an account. Persisted so a refresh doesn't bounce
+// back to the login screen.
+const GUEST_KEY = "naZdravje.guest.v1";
+function isGuestActive() { try { return localStorage.getItem(GUEST_KEY) === "1"; } catch (_) { return false; } }
+function setGuest(on) {
+  try { on ? localStorage.setItem(GUEST_KEY, "1") : localStorage.removeItem(GUEST_KEY); } catch (_) {}
+}
+
 const SCREENS = {
   home: HomeScreen,
   setup: SetupScreen,
@@ -129,6 +137,8 @@ const ctx = {
   async onAuthSuccess(session) {
     if (!session) session = await getSession();
     if (!session) { showLogin(); return; }
+    setGuest(false);
+    ctx.isGuest = false;
     ctx.currentUser = session.user;
     const { data: profile } = await getProfile(session.user.id);
     if (profile) entitlement.setFromProfile(profile);
@@ -140,6 +150,27 @@ const ctx = {
     await authSignOutFn();
     ctx.currentUser = null;
     entitlement.reset();
+    resetAll();
+    showLogin();
+  },
+
+  // ---- guest mode ----
+  isGuest: false,
+  // Start playing without an account (free tier, no cloud features).
+  continueAsGuest() {
+    setGuest(true);
+    ctx.isGuest = true;
+    ctx.currentUser = null;
+    entitlement.reset();
+    resetAll();
+    state.screen = "home";
+    save();
+    render();
+  },
+  // Leave guest mode and go register / log in (e.g. to buy premium).
+  exitGuestToLogin() {
+    setGuest(false);
+    ctx.isGuest = false;
     resetAll();
     showLogin();
   },
@@ -335,10 +366,19 @@ async function boot() {
   }
 
   if (!session) {
+    if (isGuestActive()) {
+      ctx.isGuest = true;
+      sanitizeStart();
+      render();
+      return;
+    }
     showLogin();
     return;
   }
 
+  // A real session wins over any leftover guest flag.
+  setGuest(false);
+  ctx.isGuest = false;
   ctx.currentUser = session.user;
   const { data: profile } = await getProfile(session.user.id);
   if (profile) entitlement.setFromProfile(profile);
