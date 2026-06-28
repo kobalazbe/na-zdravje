@@ -37,7 +37,7 @@ export const MODES = {
 
 export const DIFFICULTIES = {
   lahko:  { id: "lahko",  name: "Lahko",  ico: "😇", color: "#38d9a9", colorDeep: "#1fb586" },
-  sredje: { id: "sredje", name: "Sredje", ico: "😏", color: "#ff922b", colorDeep: "#e8590c" },
+  sredje: { id: "sredje", name: "Srednje", ico: "😏", color: "#ff922b", colorDeep: "#e8590c" },
   divje:  { id: "divje",  name: "Divje",  ico: "🔥", color: "#ff6b6b", colorDeep: "#e03131" },
 };
 

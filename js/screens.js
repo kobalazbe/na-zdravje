@@ -341,6 +341,89 @@ export function GameScreen(ctx) {
     requestAnimationFrame(() => renderCard(true));
   }
 
+  // ---- motion reveal: shake OR tilt the phone to flip the hidden card ----
+  // Both are alternatives to tapping. Shake = quick jolt; tilt = lean the phone
+  // forward like turning a real card over. Tilt avoids iOS's "Shake to Undo"
+  // system gesture, which intercepts hard shakes for users who haven't disabled it.
+  const SHAKE_THRESHOLD = 26;          // sum of axis deltas to count as a shake
+  const SHAKE_COOLDOWN = 800;          // ms between accepted shakes (debounce)
+  const TILT_FORWARD = 25;             // beta below this = phone leaned forward
+  const TILT_REARM = 45;               // beta above this = reading pos → re-arm tilt
+  const TILT_HOLD = 350;               // ms the lean must be held to trigger
+  const canShake = "ontouchstart" in window;  // only hint motion on touch devices
+  const needsMotionPerm =
+    typeof DeviceMotionEvent !== "undefined" &&
+    typeof DeviceMotionEvent.requestPermission === "function";  // iOS 13+
+
+  function flipByMotion() {
+    if (revealed || state.screen !== "game") return false;
+    ctx.audio.pop();
+    doReveal();
+    return true;
+  }
+
+  // -- shake (devicemotion) --
+  let lastX = null, lastY = null, lastZ = null, lastShakeTs = 0;
+  function onMotion(e) {
+    const a = e.accelerationIncludingGravity || e.acceleration;
+    if (!a) return;
+    const x = a.x || 0, y = a.y || 0, z = a.z || 0;
+    if (lastX !== null) {
+      const delta = Math.abs(x - lastX) + Math.abs(y - lastY) + Math.abs(z - lastZ);
+      const now = Date.now();
+      if (delta > SHAKE_THRESHOLD && now - lastShakeTs > SHAKE_COOLDOWN) {
+        lastShakeTs = now;
+        flipByMotion();
+      }
+    }
+    lastX = x; lastY = y; lastZ = z;
+  }
+
+  // -- tilt (deviceorientation): lean forward & hold; must return upright to re-arm --
+  let tiltTimer = null, tiltArmed = true;
+  function onTilt(e) {
+    if (e.beta === null) return;
+    if (e.beta > TILT_REARM) tiltArmed = true;
+    if (!tiltArmed || revealed) {
+      if (tiltTimer) { clearTimeout(tiltTimer); tiltTimer = null; }
+      return;
+    }
+    if (e.beta < TILT_FORWARD && !tiltTimer) {
+      tiltTimer = setTimeout(() => {
+        tiltTimer = null;
+        if (flipByMotion()) tiltArmed = false;
+      }, TILT_HOLD);
+    } else if (e.beta >= TILT_FORWARD && tiltTimer) {
+      clearTimeout(tiltTimer);
+      tiltTimer = null;
+    }
+  }
+
+  function startMotion() {
+    window.addEventListener("devicemotion", onMotion);
+    window.addEventListener("deviceorientation", onTilt);
+    ctx.setTiltCleanup(() => {
+      window.removeEventListener("devicemotion", onMotion);
+      window.removeEventListener("deviceorientation", onTilt);
+      if (tiltTimer) { clearTimeout(tiltTimer); tiltTimer = null; }
+    });
+  }
+
+  // iOS needs a user gesture to grant motion access — ask on the first tap-reveal,
+  // so every later card can be flipped by shaking or tilting.
+  let motionAsked = false;
+  async function ensureMotionPerm() {
+    if (motionAsked || !needsMotionPerm) return;
+    motionAsked = true;
+    try {
+      const perm = await DeviceMotionEvent.requestPermission();
+      if (perm === "granted") startMotion();
+    } catch (_) {}
+  }
+
+  // Android / desktop: no permission needed, start listening right away.
+  if (!needsMotionPerm) startMotion();
+
   const node = el(`
     <section class="screen">
       <div class="game-head">
@@ -384,9 +467,10 @@ export function GameScreen(ctx) {
         <div class="cb-logo">NA ZDRAVJE! 🍻</div>
         <div class="cb-body">
           <div class="cb-hint">👆 Tapni kartico za razkritje</div>
+          ${canShake ? '<div class="cb-hint cb-hint-shake">📳 stresi ali nagni telefon</div>' : ""}
         </div>`;
       actions.innerHTML = '';
-      cardEl.onclick = () => doReveal();
+      cardEl.onclick = () => { ensureMotionPerm(); doReveal(); };
       renderScores();
       return;
     }

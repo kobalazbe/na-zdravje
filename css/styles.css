@@ -332,6 +332,17 @@ body {
   font-size: 1rem;
   color: rgba(255,255,255,.85);
 }
+.cb-hint-shake {
+  font-size: .85rem;
+  color: rgba(255,255,255,.6);
+  animation: shake-hint 1.6s ease-in-out infinite;
+}
+@keyframes shake-hint {
+  0%, 88%, 100% { transform: translateX(0); }
+  91% { transform: translateX(-4px); }
+  94% { transform: translateX(4px); }
+  97% { transform: translateX(-2px); }
+}
 .card .type-tag {
   align-self: flex-start;
   background: rgba(255,255,255,.25);
