@@ -1,25 +1,4 @@
 /* Landing page JS — scroll reveal, card cycler, FAQ accordion, PWA install */
-import { fetchTopPlayers } from './leaderboard.js';
-
-// ---- Global leaderboard ----
-const landingLb = document.getElementById('landing-lb');
-if (landingLb) {
-  fetchTopPlayers(10).then(rows => {
-    if (!rows.length) {
-      landingLb.innerHTML = '<div class="landing-lb-empty">Še nihče ni igral — bodi prvi! 🍺</div>';
-      return;
-    }
-    const medals = ['🥇','🥈','🥉'];
-    landingLb.innerHTML = rows.map((r, i) => `
-      <div class="landing-lb-row">
-        <span class="landing-lb-rank">${medals[i] || (i+1)+'.'}</span>
-        <span class="landing-lb-emoji">${r.emoji}</span>
-        <span class="landing-lb-name">${r.player_name}</span>
-        <span class="landing-lb-sips">🍺 ${r.sips}</span>
-      </div>
-    `).join('');
-  });
-}
 
 // ---- Live count (random 30–80) ----
 const liveEl = document.getElementById('liveCount');

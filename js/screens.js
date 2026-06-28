@@ -9,7 +9,6 @@ import {
   MODES, DIFFICULTIES, CARD_TYPES, PRICING,
 } from "./state.js";
 import { SPICY } from "./data/cards.spicy.js";
-import { fetchTopPlayers } from "./leaderboard.js";
 
 /* ---------- tiny DOM helpers ---------- */
 function el(html) {
@@ -58,10 +57,6 @@ export function HomeScreen(ctx) {
         <div class="logo">NA ZDRAVJE!<span class="cheer">🍻 pivska igra 🍻</span></div>
         <p class="subtitle">Ena naprava • 2–10 igralcev<br>Vrtite telefon in se zabavajte.</p>
       </div>
-      <div id="leaderboard-widget" class="leaderboard-widget">
-        <div class="lb-title">🏆 Lestvica požirkov</div>
-        <div class="lb-rows" id="lb-rows"><div class="lb-loading">Nalagam…</div></div>
-      </div>
       <div class="grow"></div>
       <div class="stack" style="width:100%">
         <button class="btn btn-lg" data-act="start">Začni igro 🎲</button>
@@ -76,24 +71,6 @@ export function HomeScreen(ctx) {
   node.querySelector('[data-act="start"]').onclick = () => { ctx.audio.pop(); ctx.go("setup"); };
   node.querySelector('[data-act="how"]').onclick = () => { ctx.audio.pop(); ctx.showHowTo(); };
 
-  // populate leaderboard asynchronously
-  fetchTopPlayers(10).then(rows => {
-    const lbRows = node.querySelector('#lb-rows');
-    if (!lbRows) return;
-    if (!rows.length) {
-      lbRows.innerHTML = '<div class="lb-empty">Še nihče ni igral — bodi prvi! 🍺</div>';
-      return;
-    }
-    const medals = ['🥇','🥈','🥉'];
-    lbRows.innerHTML = rows.map((r, i) => `
-      <div class="lb-row">
-        <span class="lb-rank">${medals[i] || (i+1)+'.'}</span>
-        <span class="lb-emoji">${esc(r.emoji)}</span>
-        <span class="lb-name">${esc(r.player_name)}</span>
-        <span class="lb-sips">🍺 ${r.sips}</span>
-      </div>
-    `).join('');
-  });
   const premBtn = node.querySelector('[data-act="premium"]');
   if (premBtn) premBtn.onclick = () => { ctx.audio.pop(); ctx.showPaywall("home"); };
   const logoutBtn = node.querySelector('[data-act="logout"]');
@@ -692,11 +669,6 @@ export function SummaryScreen(ctx) {
         <span class="upsell-cta">Premium →</span>
       </button>`}
 
-      <div id="lb-summary" class="leaderboard-widget" style="margin-top:18px">
-        <div class="lb-title">🌍 Globalna lestvica</div>
-        <div class="lb-rows" id="lb-summary-rows"><div class="lb-loading">Nalagam…</div></div>
-      </div>
-
       <div class="pushed-bottom stack" style="padding-top:20px">
         <button class="btn btn-lg" data-act="again">Igraj znova 🔁</button>
         <button class="btn btn-ghost" data-act="home">Domov 🏠</button>
@@ -707,26 +679,7 @@ export function SummaryScreen(ctx) {
   node.querySelector('[data-act="again"]').onclick = () => { ctx.audio.pop(); ctx.playAgain(); };
   node.querySelector('[data-act="home"]').onclick = () => { ctx.audio.pop(); ctx.goHomeReset(); };
 
-  // fetch global leaderboard (give submit a moment to land)
-  setTimeout(() => {
-    fetchTopPlayers(10).then(rows => {
-      const lbRows = node.querySelector('#lb-summary-rows');
-      if (!lbRows) return;
-      if (!rows.length) {
-        lbRows.innerHTML = '<div class="lb-empty">Še nihče ni igral — bodi prvi! 🍺</div>';
-        return;
-      }
-      const medals = ['🥇','🥈','🥉'];
-      lbRows.innerHTML = rows.map((r, i) => `
-        <div class="lb-row">
-          <span class="lb-rank">${medals[i] || (i+1)+'.'}</span>
-          <span class="lb-emoji">${esc(r.emoji)}</span>
-          <span class="lb-name">${esc(r.player_name)}</span>
-          <span class="lb-sips">🍺 ${r.sips}</span>
-        </div>
-      `).join('');
-    });
-  }, 1200);
+
 
   const upsell = node.querySelector('[data-act="upsell"]');
   if (upsell) upsell.onclick = () => { ctx.audio.pop(); ctx.showPaywall("summary"); };

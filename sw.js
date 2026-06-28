@@ -1,4 +1,4 @@
-const CACHE = 'na-zdravje-v12';
+const CACHE = 'na-zdravje-v13';
 const PRECACHE = [
   '/index.html',
   '/landing.html',
@@ -12,7 +12,6 @@ const PRECACHE = [
   '/js/confetti.js',
   '/js/analytics.js',
   '/js/entitlement.js',
-  '/js/leaderboard.js',
   '/js/landing.js',
   '/js/data/cards.classic.js',
   '/js/data/cards.spicy.js',
