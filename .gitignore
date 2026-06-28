@@ -1,0 +1,16 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Env / secrets (for Phase 1 api/ functions)
+.env
+.env.local
+.env.*.local
+
+# Node (if added later)
+node_modules/

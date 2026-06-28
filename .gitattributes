@@ -1,0 +1,7 @@
+# Normalize line endings for all text files
+* text=auto eol=lf
+
+# Force binary for any media (if added later)
+*.png binary
+*.jpg binary
+*.ico binary

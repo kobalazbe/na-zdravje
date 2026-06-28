@@ -1,0 +1,92 @@
+<!--
+  Na Zdravje! — "Confirm signup" email template
+  Paste into: Supabase Dashboard → Authentication → Email Templates → Confirm signup
+  Supabase fills {{ .ConfirmationURL }} with the verification link.
+  Table-based + inline styles for broad email-client support (Gmail, Outlook, Apple Mail).
+-->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0;padding:0;background-color:#ffeede;">
+  <tr>
+    <td align="center" style="padding:32px 16px;">
+
+      <!-- card -->
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background-color:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 12px 28px rgba(43,33,64,0.12);">
+
+        <!-- header band -->
+        <tr>
+          <td align="center" style="background-color:#ff6b6b;padding:36px 24px 30px;">
+            <div style="font-family:'Trebuchet MS',Verdana,sans-serif;font-size:34px;line-height:1.05;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">
+              Na Zdravje!
+            </div>
+            <div style="font-size:30px;margin-top:6px;">🍻</div>
+          </td>
+        </tr>
+
+        <!-- body -->
+        <tr>
+          <td style="padding:34px 32px 12px;font-family:'Trebuchet MS',Verdana,sans-serif;color:#2b2140;">
+            <h1 style="margin:0 0 14px;font-size:22px;font-weight:800;text-align:center;color:#2b2140;">
+              Potrdi svoj e-naslov 🎉
+            </h1>
+            <p style="margin:0 0 22px;font-size:16px;line-height:1.55;color:#5b5170;text-align:center;">
+              Še en korak in lahko začneš igrati! Klikni spodnji gumb, da potrdiš svoj račun.
+            </p>
+          </td>
+        </tr>
+
+        <!-- button -->
+        <tr>
+          <td align="center" style="padding:4px 32px 28px;">
+            <table role="presentation" cellpadding="0" cellspacing="0">
+              <tr>
+                <td align="center" style="border-radius:18px;background-color:#ff6b6b;box-shadow:0 6px 0 #e84b4b;">
+                  <a href="{{ .ConfirmationURL }}"
+                     style="display:inline-block;padding:16px 38px;font-family:'Trebuchet MS',Verdana,sans-serif;font-size:18px;font-weight:800;color:#ffffff;text-decoration:none;border-radius:18px;">
+                    Potrdi e-pošto 🍻
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- fallback link -->
+        <tr>
+          <td style="padding:0 32px 30px;font-family:'Trebuchet MS',Verdana,sans-serif;">
+            <p style="margin:0 0 8px;font-size:13px;line-height:1.5;color:#8a8298;text-align:center;">
+              Če gumb ne deluje, kopiraj to povezavo v brskalnik:
+            </p>
+            <p style="margin:0;font-size:12px;line-height:1.5;word-break:break-all;text-align:center;">
+              <a href="{{ .ConfirmationURL }}" style="color:#845ef7;text-decoration:underline;">{{ .ConfirmationURL }}</a>
+            </p>
+          </td>
+        </tr>
+
+        <!-- divider -->
+        <tr>
+          <td style="padding:0 32px;">
+            <div style="height:1px;background-color:#efe9f7;"></div>
+          </td>
+        </tr>
+
+        <!-- footer -->
+        <tr>
+          <td style="padding:20px 32px 30px;font-family:'Trebuchet MS',Verdana,sans-serif;">
+            <p style="margin:0 0 6px;font-size:12px;line-height:1.5;color:#8a8298;text-align:center;">
+              Če se nisi registriral/a, lahko to sporočilo prezreš.
+            </p>
+            <p style="margin:0;font-size:12px;line-height:1.5;color:#b3aec0;text-align:center;">
+              🔞 Pij odgovorno. Igra je namenjena odraslim.
+            </p>
+          </td>
+        </tr>
+
+      </table>
+
+      <!-- brand line under card -->
+      <div style="margin-top:18px;font-family:'Trebuchet MS',Verdana,sans-serif;font-size:12px;color:#b3aec0;">
+        Na Zdravje! · pivska igra
+      </div>
+
+    </td>
+  </tr>
+</table>
