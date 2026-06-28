@@ -32,7 +32,8 @@ export function HomeScreen(ctx) {
   ctx.setTheme("#ff6b6b", "#e84b4b");
   const premium = ctx.isPremium();
   const hrs = ctx.passHoursLeft();
-  const userEmail = ctx.currentUser?.email || "";
+  const isGuest = ctx.isGuest && !ctx.currentUser;
+  const userName = ctx.currentUser ? ctx.displayName() : (isGuest ? "Gost" : "");
 
   const premiumBlock = premium
     ? `<div class="premium-status">
@@ -47,9 +48,9 @@ export function HomeScreen(ctx) {
 
   const node = el(`
     <section class="screen center-col">
-      ${userEmail ? `<div class="user-row${premium ? " is-premium" : ""}">
-        <span>${premium ? "👑" : "👤"} ${esc(userEmail)}</span>
-        <button class="btn-logout" data-act="logout">Odjava</button>
+      ${userName ? `<div class="user-row${premium ? " is-premium" : ""}">
+        <span>${premium ? "👑" : (isGuest ? "🎲" : "👤")} ${esc(userName)}</span>
+        <button class="btn-logout" data-act="${isGuest ? "guest-login" : "logout"}">${isGuest ? "Prijava / Registracija" : "Odjava"}</button>
       </div>` : ""}
       <div class="grow"></div>
       <div class="stack" style="align-items:center;gap:6px">
@@ -60,7 +61,7 @@ export function HomeScreen(ctx) {
       <div class="stack" style="width:100%">
         <button class="btn btn-lg" data-act="start">Začni igro 🎲</button>
         <button class="btn btn-ghost" data-act="how">Kako se igra?</button>
-        ${premium ? `<button class="btn btn-ghost" data-act="cards">🃏 Moje kartice</button>` : ""}
+        ${premium && ctx.currentUser ? `<button class="btn btn-ghost" data-act="cards">🃏 Moje kartice</button>` : ""}
         <div style="margin-top:8px">${premiumBlock}</div>
       </div>
       <p class="hint" style="margin-top:18px">Pij odgovorno. Igra je namenjena odraslim. 🔞</p>
@@ -73,6 +74,8 @@ export function HomeScreen(ctx) {
   if (premBtn) premBtn.onclick = () => { ctx.audio.pop(); ctx.showPaywall("home"); };
   const logoutBtn = node.querySelector('[data-act="logout"]');
   if (logoutBtn) logoutBtn.onclick = () => ctx.signOut();
+  const guestLoginBtn = node.querySelector('[data-act="guest-login"]');
+  if (guestLoginBtn) guestLoginBtn.onclick = () => { ctx.audio.pop(); ctx.exitGuestToLogin(); };
   const cardsBtn = node.querySelector('[data-act="cards"]');
   if (cardsBtn) cardsBtn.onclick = () => { ctx.audio.pop(); ctx.manageCustomCards(); };
   const refreshBtn = node.querySelector('[data-act="refresh"]');
@@ -715,6 +718,12 @@ export function PaywallModal(ctx, source = "generic", onDismiss) {
   node.querySelectorAll("[data-tier]").forEach((b) => {
     b.onclick = () => {
       ctx.audio.pop();
+      // A guest has no account to attach the purchase to — send them to register.
+      if (ctx.isGuest && !ctx.currentUser) {
+        msg.textContent = "Za nakup Premium se najprej registriraj. 👇";
+        setTimeout(() => { ctx.closeModal(); ctx.exitGuestToLogin(); }, 1400);
+        return;
+      }
       const opened = ctx.startCheckout(b.dataset.tier);
       if (!opened) {
         msg.textContent = "Plačilo pride kmalu. Imaš kodo? Vnesi jo spodaj. 👇";
@@ -782,6 +791,7 @@ export function LoginScreen(ctx, initialMode = "login") {
             <span>Nadaljuj z Google</span>
           </button>
           <div class="auth-divider" id="auth-divider"><span>ali</span></div>
+          <input class="input" id="auth-name" type="text" placeholder="Tvoje ime" autocomplete="name" maxlength="24" style="display:none" />
           <input class="input" id="auth-email" type="email" placeholder="E-pošta" autocomplete="email" inputmode="email" />
           <input class="input" id="auth-pass" type="password" placeholder="Geslo (min. 6 znakov)" autocomplete="current-password" />
           <button class="btn btn-lg" id="auth-submit">Prijava</button>
@@ -790,12 +800,14 @@ export function LoginScreen(ctx, initialMode = "login") {
           <button class="btn-forgot" id="auth-forgot">Pozabljeno geslo?</button>
         </div>
       </div>
+      <button class="btn-guest" id="auth-guest">🎲 Igraj kot gost</button>
       <div class="grow"></div>
       <p class="hint" style="text-align:center">Pij odgovorno. Igra je namenjena odraslim. 🔞</p>
     </section>
   `);
 
   const titleEl  = node.querySelector("#auth-title");
+  const nameEl   = node.querySelector("#auth-name");
   const emailEl  = node.querySelector("#auth-email");
   const passEl   = node.querySelector("#auth-pass");
   const submitEl = node.querySelector("#auth-submit");
@@ -804,6 +816,7 @@ export function LoginScreen(ctx, initialMode = "login") {
   const forgotEl = node.querySelector("#auth-forgot");
   const googleEl  = node.querySelector("#auth-google");
   const dividerEl = node.querySelector("#auth-divider");
+  const guestEl   = node.querySelector("#auth-guest");
 
   function setMode(m) {
     mode = m;
@@ -814,12 +827,15 @@ export function LoginScreen(ctx, initialMode = "login") {
     const isReset  = m === "reset";
 
     passEl.style.display  = (isForgot) ? "none" : "";
+    nameEl.style.display  = (m === "signup") ? "" : "none";
+    emailEl.style.display = (isReset) ? "none" : "";
     forgotEl.style.display = (isForgot || isReset) ? "none" : "";
     toggleEl.style.display = (isForgot || isReset) ? "none" : "";
-    // Google sign-in only makes sense for login/signup, not password flows
+    // Google sign-in + guest play only make sense for login/signup, not password flows
     const showGoogle = (m === "login" || m === "signup");
     googleEl.style.display  = showGoogle ? "" : "none";
     dividerEl.style.display = showGoogle ? "" : "none";
+    guestEl.style.display   = showGoogle ? "" : "none";
 
     if (m === "login") {
       titleEl.textContent  = "Prijava";
@@ -849,6 +865,7 @@ export function LoginScreen(ctx, initialMode = "login") {
 
   toggleEl.onclick = () => setMode(mode === "login" ? "signup" : "login");
   forgotEl.onclick = () => setMode("forgot");
+  guestEl.onclick = () => { ctx.audio.pop(); ctx.continueAsGuest(); };
 
   googleEl.onclick = async () => {
     errEl.textContent = "";
@@ -892,26 +909,59 @@ export function LoginScreen(ctx, initialMode = "login") {
       return;
     }
 
-    if (!email || !pass) { errEl.textContent = "Izpolni oba polji."; submitEl.disabled = false; submitEl.textContent = mode === "login" ? "Prijava" : "Ustvari račun"; return; }
-    if (pass.length < 6) { errEl.textContent = "Geslo mora imeti vsaj 6 znakov."; submitEl.disabled = false; submitEl.textContent = mode === "login" ? "Prijava" : "Ustvari račun"; return; }
+    const resetSubmit = () => {
+      submitEl.disabled = false;
+      submitEl.textContent = mode === "login" ? "Prijava" : "Ustvari račun";
+    };
+
+    if (!email || !pass) { errEl.textContent = "Izpolni oba polji."; resetSubmit(); return; }
+    if (pass.length < 6) { errEl.textContent = "Geslo mora imeti vsaj 6 znakov."; resetSubmit(); return; }
+
+    const name = nameEl.value.trim();
+    if (mode === "signup" && !name) { errEl.textContent = "Vnesi svoje ime."; resetSubmit(); return; }
 
     const { data, error } = mode === "login"
       ? await ctx.authSignIn(email, pass)
-      : await ctx.authSignUp(email, pass);
+      : await ctx.authSignUp(email, pass, name);
 
     if (error) {
-      submitEl.disabled = false;
-      submitEl.textContent = mode === "login" ? "Prijava" : "Ustvari račun";
+      // A new person trying to log in → guide them to registration instead.
+      if (mode === "login" && /invalid login|invalid_credentials/i.test(error.message)) {
+        setMode("signup");
+        emailEl.value = email;
+        nameEl.focus();
+        errEl.textContent = "Računa s tem e-naslovom (še) ni. Registriraj se spodaj 👇";
+        resetSubmit();
+        return;
+      }
+      resetSubmit();
       errEl.textContent = _authErr(error.message);
       return;
     }
 
-    if (mode === "signup" && data.user && !data.session) {
-      errEl.style.color = "#38d9a9";
-      errEl.textContent = "✅ Račun ustvarjen! Prijavi se.";
-      submitEl.disabled = false;
-      submitEl.textContent = "Ustvari račun";
+    // Supabase enumeration-protection: an existing (confirmed) email returns a
+    // user with NO identities and no session. Treat that as "already registered".
+    if (mode === "signup" && data.user && Array.isArray(data.user.identities)
+        && data.user.identities.length === 0) {
+      passEl.value = "";
       setMode("login");
+      emailEl.value = email;
+      errEl.textContent = "Ta e-pošta je že registrirana. Prijavi se.";
+      submitEl.disabled = false;
+      submitEl.textContent = "Prijava";
+      return;
+    }
+
+    if (mode === "signup" && data.user && !data.session) {
+      // Email confirmation is on: Supabase returns a user but no session until
+      // the user clicks the link we just emailed them.
+      passEl.value = "";
+      setMode("login");
+      emailEl.value = email;
+      errEl.style.color = "#38d9a9";
+      errEl.innerHTML = `✅ Račun ustvarjen! Poslali smo ti potrditveno e-pošto na <b>${esc(email)}</b>.<br>Klikni povezavo v njej, nato se prijavi.`;
+      submitEl.disabled = false;
+      submitEl.textContent = "Prijava";
       return;
     }
 
