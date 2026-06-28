@@ -167,12 +167,12 @@ const ctx = {
     save();
     render();
   },
-  // Leave guest mode and go register / log in (e.g. to buy premium).
-  exitGuestToLogin() {
+  // Leave guest mode to register / log in (e.g. to buy premium). Keeps the
+  // current game state so they can pick up right where they left off.
+  exitGuestToLogin(mode = "login") {
     setGuest(false);
     ctx.isGuest = false;
-    resetAll();
-    showLogin();
+    showLogin(mode);
   },
 
   // ---- monetization ----
@@ -250,10 +250,10 @@ function render() {
   window.scrollTo(0, 0);
 }
 
-function showLogin() {
+function showLogin(mode) {
   closeModal();
   root.innerHTML = "";
-  root.appendChild(LoginScreen(ctx));
+  root.appendChild(LoginScreen(ctx, mode));
   window.scrollTo(0, 0);
 }
 

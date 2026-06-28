@@ -288,7 +288,9 @@ export function ModeScreen(ctx) {
 
   function activateTilt() {
     let tiltTimer = null;
+    let gotEvent = false;
     const handler = (e) => {
+      gotEvent = true;
       // beta: 90 = phone upright, 0 = flat, <20 = tilted forward (drinking)
       const tilted = e.beta !== null && e.beta < 22;
       if (tilted && !tiltTimer) {
@@ -303,7 +305,12 @@ export function ModeScreen(ctx) {
       }
     };
     window.addEventListener("deviceorientation", handler);
+    // A working device streams orientation constantly. If nothing arrives, the
+    // sensor is unavailable (desktop, or insecure http on a phone) — quietly
+    // drop the hint so we don't promise a gesture that can't fire.
+    const availTimer = setTimeout(() => { if (!gotEvent) tiltArea.innerHTML = ""; }, 1600);
     ctx.setTiltCleanup(() => {
+      clearTimeout(availTimer);
       window.removeEventListener("deviceorientation", handler);
       if (tiltTimer) { clearTimeout(tiltTimer); tiltTimer = null; }
     });
@@ -697,6 +704,7 @@ export function PaywallModal(ctx, source = "generic", onDismiss) {
 
         <div class="tier-list">${tiers}</div>
 
+        <button class="btn" data-act="guest-register" style="display:none">📝 Registriraj se za nakup</button>
         <button class="btn" data-act="verify" style="display:none">✓ Plačal sem — preveri dostop</button>
 
         <div class="redeem">
@@ -714,14 +722,25 @@ export function PaywallModal(ctx, source = "generic", onDismiss) {
   const msg = node.querySelector("#redeemMsg");
   const input = node.querySelector("#redeemInput");
   const verifyBtn = node.querySelector('[data-act="verify"]');
+  const guestRegBtn = node.querySelector('[data-act="guest-register"]');
+  const isGuest = ctx.isGuest && !ctx.currentUser;
+
+  // Guests can't attach a purchase to an account — offer registration up front.
+  if (isGuest) guestRegBtn.style.display = "";
+  guestRegBtn.onclick = () => {
+    ctx.audio.pop();
+    ctx.closeModal();
+    ctx.exitGuestToLogin("signup"); // keeps their game; they can buy after logging in
+  };
 
   node.querySelectorAll("[data-tier]").forEach((b) => {
     b.onclick = () => {
       ctx.audio.pop();
-      // A guest has no account to attach the purchase to — send them to register.
-      if (ctx.isGuest && !ctx.currentUser) {
-        msg.textContent = "Za nakup Premium se najprej registriraj. 👇";
-        setTimeout(() => { ctx.closeModal(); ctx.exitGuestToLogin(); }, 1400);
+      // A guest has no account to attach the purchase to — nudge to register,
+      // but don't kick them out: closing the paywall keeps them playing.
+      if (isGuest) {
+        msg.textContent = "Za nakup Premium se najprej registriraj 👆 (igro lahko nadaljuješ).";
+        guestRegBtn.classList.add("btn-pop");
         return;
       }
       const opened = ctx.startCheckout(b.dataset.tier);
