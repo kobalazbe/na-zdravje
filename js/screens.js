@@ -401,8 +401,9 @@ export function GameScreen(ctx) {
         <div class="card-text blurred">${esc(c.text)}</div>
         <span class="sips-badge">👑 Samo za Premium</span>
       `;
-      // Auto-open paywall; dismissing without buying auto-advances to next player
-      setTimeout(() => ctx.showPaywall("teaser_card", advance), 350);
+      // Auto-open paywall as a teaser; the card keeps a visible "Preskoči"
+      // button so dismissing it never locks the player.
+      setTimeout(() => ctx.showPaywall("teaser_card"), 350);
     } else {
       cardEl.classList.remove("teaser");
       const t = CARD_TYPES[c.type] || CARD_TYPES.izziv;
@@ -443,9 +444,13 @@ export function GameScreen(ctx) {
       actions.innerHTML = `
         <div class="btn-row">
           <button class="btn" data-act="unlock">Odkleni Premium 👑</button>
+          <button class="btn btn-ghost" data-act="skip-teaser">Preskoči →</button>
         </div>`;
       actions.querySelector('[data-act="unlock"]').onclick = () => {
-        ctx.audio.pop(); ctx.showPaywall("teaser_card", advance);
+        ctx.audio.pop(); ctx.showPaywall("teaser_card");
+      };
+      actions.querySelector('[data-act="skip-teaser"]').onclick = () => {
+        ctx.audio.pop(); advance();
       };
       return;
     }
