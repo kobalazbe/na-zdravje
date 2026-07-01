@@ -53,14 +53,20 @@ document.querySelectorAll('.faq-q').forEach(btn => {
 
 // ---- Card showcase cycler ----
 const CARDS = [
-  { type: 'Vprašanje', emoji: '💬', color: '#38d9a9',
+  { type: 'Vprašanje', emoji: '💬', color: '#845ef7',
     text: 'Kam bi odpotoval/a takoj, če bi imel/a brezplačno karto?' },
   { type: 'Izziv', emoji: '🎯', color: '#ff922b',
     text: 'Naredi selfie z osebo na svoji levi.', sips: 1 },
-  { type: 'Skupinski izziv', emoji: '👥', color: '#845ef7',
+  { type: 'Skupinski izziv', emoji: '👥', color: '#22b8cf',
     text: 'Skupinska nazdravica! Vsi trčite in pijte. 🍻' },
   { type: 'Pij!', emoji: '🍺', color: '#ff6b6b',
     text: 'Popij na zdravje vseh prisotnih!', sips: 2 },
+  { type: 'Glasovanje', emoji: '🗳️', color: '#fab005',
+    text: 'Kdo za mizo bi prvi končal v zaporu? Največ glasov popije 2. 🚔' },
+  { type: 'Pravilo', emoji: '⚡', color: '#5c7cfa',
+    text: "Zapomni si: OBLAK ☁️. Do konca kroga kdor to besedo izgovori, pije." },
+  { type: 'Dogodek', emoji: '🎲', color: '#82c91e',
+    text: 'Kip! Vsi zamrznejo. Kdor se prvi premakne, pije 2. 🗿' },
 ];
 
 const cardEl = document.getElementById('showcaseCard');
