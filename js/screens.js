@@ -289,7 +289,9 @@ export function ModeScreen(ctx) {
 
   function activateTilt() {
     let tiltTimer = null;
+    let gotEvent = false;
     const handler = (e) => {
+      gotEvent = true;
       // beta: 90 = phone upright, 0 = flat, <20 = tilted forward (drinking)
       const tilted = e.beta !== null && e.beta < 22;
       if (tilted && !tiltTimer) {
@@ -304,7 +306,12 @@ export function ModeScreen(ctx) {
       }
     };
     window.addEventListener("deviceorientation", handler);
+    // A working device streams orientation constantly. If nothing arrives, the
+    // sensor is unavailable (desktop, or insecure http on a phone) — quietly
+    // drop the hint so we don't promise a gesture that can't fire.
+    const availTimer = setTimeout(() => { if (!gotEvent) tiltArea.innerHTML = ""; }, 1600);
     ctx.setTiltCleanup(() => {
+      clearTimeout(availTimer);
       window.removeEventListener("deviceorientation", handler);
       if (tiltTimer) { clearTimeout(tiltTimer); tiltTimer = null; }
     });
@@ -479,8 +486,9 @@ export function GameScreen(ctx) {
         <div class="card-text blurred">${esc(c.text)}</div>
         <span class="sips-badge">👑 Samo za Premium</span>
       `;
-      // Auto-open paywall; dismissing without buying auto-advances to next player
-      setTimeout(() => ctx.showPaywall("teaser_card", advance), 350);
+      // Auto-open paywall as a teaser; the card keeps a visible "Preskoči"
+      // button so dismissing it never locks the player.
+      setTimeout(() => ctx.showPaywall("teaser_card"), 350);
     } else {
       cardEl.classList.remove("teaser");
       const t = CARD_TYPES[c.type] || CARD_TYPES.izziv;
@@ -521,9 +529,13 @@ export function GameScreen(ctx) {
       actions.innerHTML = `
         <div class="btn-row">
           <button class="btn" data-act="unlock">Odkleni Premium 👑</button>
+          <button class="btn btn-ghost" data-act="skip-teaser">Preskoči →</button>
         </div>`;
       actions.querySelector('[data-act="unlock"]').onclick = () => {
-        ctx.audio.pop(); ctx.showPaywall("teaser_card", advance);
+        ctx.audio.pop(); ctx.showPaywall("teaser_card");
+      };
+      actions.querySelector('[data-act="skip-teaser"]').onclick = () => {
+        ctx.audio.pop(); advance();
       };
       return;
     }
@@ -836,16 +848,14 @@ export function PaywallModal(ctx, source = "generic", onDismiss) {
   const msg = node.querySelector("#redeemMsg");
   const input = node.querySelector("#redeemInput");
   const verifyBtn = node.querySelector('[data-act="verify"]');
+  const isGuest = ctx.isGuest && !ctx.currentUser;
 
   node.querySelectorAll("[data-tier]").forEach((b) => {
     b.onclick = () => {
       ctx.audio.pop();
-      // A guest has no account to attach the purchase to — send them to register.
-      if (ctx.isGuest && !ctx.currentUser) {
-        msg.textContent = "Za nakup Premium se najprej registriraj. 👇";
-        setTimeout(() => { ctx.closeModal(); ctx.exitGuestToLogin(); }, 1400);
-        return;
-      }
+      // A guest has no account to attach the purchase to — pop up a prompt to
+      // register / log in. Their game is kept either way.
+      if (isGuest) { ctx.promptGuestRegister(); return; }
       const opened = ctx.startCheckout(b.dataset.tier);
       if (!opened) {
         msg.textContent = "Plačilo pride kmalu. Imaš kodo? Vnesi jo spodaj. 👇";
