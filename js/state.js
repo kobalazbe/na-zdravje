@@ -41,12 +41,26 @@ export const DIFFICULTIES = {
   divje:  { id: "divje",  name: "Divje",  ico: "🔥", color: "#ff6b6b", colorDeep: "#e03131" },
 };
 
+/* How many `izziv` challenges a player may skip per game — independent of
+   difficulty, its own selectable setting. `value: Infinity` lives in module
+   scope (not `state`) so it survives — it never gets JSON-serialized. `p.skips`
+   (per player, zeroed by resetRound) is the budget counter. When the budget is
+   spent the skip button disappears — you must do it. */
+export const SKIP_LIMIT_OPTIONS = {
+  unlimited: { id: "unlimited", name: "Neomejeno", ico: "♾️", color: "#38d9a9", colorDeep: "#1fb586", value: Infinity },
+  three:     { id: "three",     name: "3x",        ico: "🍺", color: "#ff922b", colorDeep: "#e8590c", value: 3 },
+  one:       { id: "one",       name: "1x",        ico: "🔥", color: "#ff6b6b", colorDeep: "#e03131", value: 1 },
+};
+
 // canonical card-type metadata (label + emoji shown on the card)
 export const CARD_TYPES = {
-  vprasanje: { label: "Vprašanje",      emoji: "💬", color: "#845ef7", colorDeep: "#6741d9" },
-  izziv:     { label: "Izziv",          emoji: "🎯", color: "#ff922b", colorDeep: "#e8590c" },
-  skupinski: { label: "Skupinski izziv", emoji: "👥", color: "#22b8cf", colorDeep: "#0c8599" },
-  pijaca:    { label: "Pij!",           emoji: "🍺", color: "#ff6b6b", colorDeep: "#e03131" },
+  vprasanje:  { label: "Vprašanje",      emoji: "💬", color: "#845ef7", colorDeep: "#6741d9" },
+  izziv:      { label: "Izziv",          emoji: "🎯", color: "#ff922b", colorDeep: "#e8590c" },
+  skupinski:  { label: "Skupinski izziv", emoji: "👥", color: "#22b8cf", colorDeep: "#0c8599" },
+  pijaca:     { label: "Pij!",           emoji: "🍺", color: "#ff6b6b", colorDeep: "#e03131" },
+  glasovanje: { label: "Glasovanje",     emoji: "🗳️", color: "#fab005", colorDeep: "#f08c00" },
+  pravilo:    { label: "Pravilo",        emoji: "⚡", color: "#5c7cfa", colorDeep: "#4263eb" },
+  dogodek:    { label: "Dogodek",        emoji: "🎲", color: "#82c91e", colorDeep: "#5c940d" },
 };
 
 /* ---- Monetization config ----
@@ -74,7 +88,11 @@ function freshState() {
     players: [],           // { id, name, color, emoji, sips, done, skips }
     mode: null,            // "classic" | "spicy"
     difficulty: null,      // "lahko" | "sredje" | "divje"
-    includeDrinks: true,   // include direct "pijaca" cards
+    skipLimit: "unlimited", // "unlimited" | "three" | "one" — challenge skips per game
+    cardTypeFilters: {     // which card types are included this game (all on by default)
+      vprasanje: true, izziv: true, skupinski: true, pijaca: true,
+      glasovanje: true, pravilo: true, dogodek: true,
+    },
     adultConfirmed: false,
     // runtime game data
     turn: 0,               // index into players
@@ -85,6 +103,10 @@ function freshState() {
     freeDraws: 0,          // free-tier draw counter (drives teaser cadence)
     repeated: false,       // free deck has cycled → show repetition nudge
     shakeEnabled: true,    // motion-reveal (shake + tilt) on/off
+    activeRules: [],       // active "pravilo" cards: { text, turnsLeft }; ticks down
+                           // once per turn in advance() — one full lap of the table
+    pool: [],              // fixed card set for this game — reshuffled, never re-sampled,
+                           // so a card can only repeat after every other card has been shown
   };
 }
 
@@ -103,7 +125,18 @@ function load() {
     const parsed = JSON.parse(raw);
     // guard against an old/broken shape
     if (!parsed || typeof parsed !== "object" || !("screen" in parsed)) return null;
-    return Object.assign(freshState(), parsed);
+    const merged = Object.assign(freshState(), parsed);
+    // one-time migration: old boolean drink toggle → new per-type filter map
+    if (typeof parsed.includeDrinks === "boolean" && !parsed.cardTypeFilters) {
+      merged.cardTypeFilters = { ...merged.cardTypeFilters, pijaca: parsed.includeDrinks };
+    }
+    delete merged.includeDrinks;
+    // one-time migration: skip limit used to be implied by difficulty
+    if (!parsed.skipLimit) {
+      const carried = { lahko: "unlimited", sredje: "three", divje: "one" };
+      merged.skipLimit = carried[parsed.difficulty] || "unlimited";
+    }
+    return merged;
   } catch (_) {
     return null;
   }
@@ -124,6 +157,8 @@ export function resetRound() {
   state.freeDraws = 0;
   state.repeated = false;
   state.repeatedDismissed = false;
+  state.activeRules = [];
+  state.pool = [];
   state.players.forEach((p) => { p.sips = 0; p.done = 0; p.skips = 0; });
 }
 

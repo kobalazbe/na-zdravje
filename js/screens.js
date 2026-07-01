@@ -6,7 +6,7 @@
    =========================================================== */
 
 import {
-  MODES, DIFFICULTIES, CARD_TYPES, PRICING,
+  MODES, DIFFICULTIES, CARD_TYPES, PRICING, SKIP_LIMIT_OPTIONS,
 } from "./state.js";
 import { SPICY } from "./data/cards.spicy.js";
 
@@ -168,6 +168,7 @@ export function ModeScreen(ctx) {
   const { state } = ctx;
   if (!state.mode) state.mode = "classic";
   if (!state.difficulty) state.difficulty = "lahko";
+  if (!state.skipLimit) state.skipLimit = "unlimited";
 
   const node = el(`
     <section class="screen">
@@ -178,16 +179,15 @@ export function ModeScreen(ctx) {
 
       <div class="choice-grid" id="modeGrid"></div>
 
-      <p class="section-title" style="font-size:1.2rem;margin:22px 0 12px">Težavnost</p>
+      <p class="section-title" style="font-size:1.05rem;margin:12px 0 6px">Težavnost</p>
       <div class="diff-row" id="diffRow"></div>
 
-      <div class="toggle-row" style="margin-top:20px">
-        <span class="label">Vključi ukaze za pitje 🍺</span>
-        <label class="switch">
-          <input type="checkbox" id="drinkToggle" ${state.includeDrinks ? "checked" : ""}>
-          <span class="track"></span>
-        </label>
-      </div>
+      <p class="section-title" style="font-size:1.05rem;margin:12px 0 6px">Preskoki izzivov</p>
+      <div class="diff-row" id="skipRow"></div>
+
+      <button class="btn btn-ghost" data-act="card-types" style="margin-top:12px">
+        🃏 Vrste kartic <span id="cardTypeCount"></span>
+      </button>
 
       <div class="pushed-bottom stack" style="padding-top:20px">
         <button class="btn btn-lg" data-act="play" id="playBtn">Igraj! 🚀</button>
@@ -198,6 +198,7 @@ export function ModeScreen(ctx) {
 
   const modeGrid = node.querySelector("#modeGrid");
   const diffRow = node.querySelector("#diffRow");
+  const skipRow = node.querySelector("#skipRow");
 
   // a mode is premium-gated when it's the adult (Pikantno) pack and the user is free
   const isLocked = (m) => m.adult && !ctx.isPremium();
@@ -239,9 +240,27 @@ export function ModeScreen(ctx) {
       b.onclick = () => { ctx.audio.pop(); state.difficulty = b.dataset.diff; ctx.save(); renderDiffs(); };
     });
   }
+  function renderSkips() {
+    skipRow.innerHTML = Object.values(SKIP_LIMIT_OPTIONS).map((s) => `
+      <button class="diff ${state.skipLimit === s.id ? "selected" : ""}"
+              data-skip="${s.id}" style="background:${s.color};box-shadow:0 5px 0 ${s.colorDeep}">
+        <span class="ico">${s.ico}</span>${s.name}
+      </button>
+    `).join("");
+    skipRow.querySelectorAll("[data-skip]").forEach((b) => {
+      b.onclick = () => { ctx.audio.pop(); state.skipLimit = b.dataset.skip; ctx.save(); renderSkips(); };
+    });
+  }
 
-  node.querySelector("#drinkToggle").onchange = (e) => {
-    state.includeDrinks = e.target.checked; ctx.save();
+  function updateCardTypeCount() {
+    const n = Object.values(state.cardTypeFilters).filter(Boolean).length;
+    const el = node.querySelector("#cardTypeCount");
+    if (el) el.textContent = `(${n}/7 vključenih)`;
+  }
+  updateCardTypeCount();
+  node.querySelector('[data-act="card-types"]').onclick = () => {
+    ctx.audio.pop();
+    ctx.showCardTypeFilter(updateCardTypeCount);
   };
   node.querySelector('[data-act="back"]').onclick = () => { ctx.audio.pop(); ctx.go("setup"); };
 
@@ -319,6 +338,7 @@ export function ModeScreen(ctx) {
 
   renderModes();
   renderDiffs();
+  renderSkips();
   return node;
 }
 
@@ -436,6 +456,8 @@ export function GameScreen(ctx) {
         <span class="round" id="roundLabel"></span>
       </div>
 
+      <div class="rules-banner" id="rulesBanner"></div>
+
       <div class="card-area">
         <div class="card" id="card"></div>
       </div>
@@ -453,6 +475,7 @@ export function GameScreen(ctx) {
   const roundLabel = node.querySelector("#roundLabel");
   const scoreboard = node.querySelector("#scoreboard");
   const nudge = node.querySelector("#nudge");
+  const rulesBanner = node.querySelector("#rulesBanner");
 
   function renderCard(flipAnim) {
     const c = state.current;
@@ -469,10 +492,15 @@ export function GameScreen(ctx) {
         <div class="cb-body">
           <div class="cb-hint">👆 Tapni kartico za razkritje</div>
           ${canShake ? '<div class="cb-hint cb-hint-shake">📳 stresi ali nagni telefon</div>' : ""}
-        </div>`;
+        </div>
+        ${canShake ? '<button class="cb-help" data-act="reveal-help">ℹ️ Kako razkriti?</button>' : ""}`;
       actions.innerHTML = '';
       cardEl.onclick = () => { ensureMotionPerm(); doReveal(); };
+      const helpBtn = cardEl.querySelector('[data-act="reveal-help"]');
+      // stopPropagation so tapping the help chip doesn't also reveal the card
+      if (helpBtn) helpBtn.onclick = (e) => { e.stopPropagation(); ctx.audio.pop(); ctx.showRevealHelp(); };
       renderScores();
+      renderRules();
       return;
     }
 
@@ -504,7 +532,18 @@ export function GameScreen(ctx) {
     }
     renderActions(c);
     renderScores();
+    renderRules();
     renderNudge();
+  }
+
+  // persistent "pravilo" cards: just render whatever's still active.
+  // Expiry itself happens once per turn in advance() (turn-count based, not
+  // round-number based) so a rule lasts exactly one lap regardless of which
+  // player's turn it was drawn on.
+  function renderRules() {
+    rulesBanner.innerHTML = (state.activeRules || [])
+      .map((r) => `<span class="rule-chip">⚡ ${esc(r.text)}</span>`)
+      .join("");
   }
 
   // repetition nudge: free deck has cycled → seen-it-already conversion prompt
@@ -541,15 +580,24 @@ export function GameScreen(ctx) {
     }
     if (c.type === "izziv") {
       const pen = c.sips || 2;
+      // an independent setting caps how many challenges a player may skip per game
+      const limit = SKIP_LIMIT_OPTIONS[state.skipLimit]?.value ?? Infinity;
+      const left = limit - p.skips;                     // Infinity - n = Infinity
+      const canSkip = left > 0;
+      const leftHint = Number.isFinite(limit) ? ` (še ${Math.max(0, left)})` : "";
       actions.innerHTML = `
         <div class="btn-row">
           <button class="btn" data-act="done">Opravljeno ✓</button>
-          <button class="btn btn-ghost" data-act="skip">Preskoči 🍺 ${pen}</button>
+          ${canSkip
+            ? `<button class="btn btn-ghost" data-act="skip">Preskoči 🍺 ${pen}${leftHint}</button>`
+            : `<span class="skip-locked">🚫 Ni več preskokov — moraš!</span>`}
         </div>`;
       actions.querySelector('[data-act="done"]').onclick = () => { ctx.audio.success(); p.done++; advance(); };
-      actions.querySelector('[data-act="skip"]').onclick = () => {
-        ctx.audio.drink(); p.sips += pen; p.skips++; ctx.bumpScore(); advance();
-      };
+      if (canSkip) {
+        actions.querySelector('[data-act="skip"]').onclick = () => {
+          ctx.audio.drink(); p.sips += pen; p.skips++; ctx.bumpScore(); advance();
+        };
+      }
     } else if (c.type === "pijaca") {
       const n = c.sips || 1;
       actions.innerHTML = `<button class="btn" data-act="drank">Na ex! 🍺 (${n})</button>`;
@@ -557,8 +605,19 @@ export function GameScreen(ctx) {
         spawnDrinkFloat(e.currentTarget, n);
         ctx.audio.drink(); p.sips += n; ctx.bumpScore(); advance();
       };
+    } else if (c.type === "pravilo") {
+      // register a temporary rule, then advance; renderRules() keeps it on screen.
+      // Every pravilo lasts exactly one lap: turnsLeft = one turn per player,
+      // counted down in advance() — so it always covers exactly one full
+      // go-around of the table, no matter whose turn it was drawn on.
+      actions.innerHTML = `<button class="btn" data-act="rule">Pravilo aktivno! ⚡</button>`;
+      actions.querySelector('[data-act="rule"]').onclick = () => {
+        ctx.audio.pop();
+        state.activeRules.push({ text: c.text, turnsLeft: state.players.length });
+        p.done++; advance();
+      };
     } else {
-      // vprasanje / skupinski → single continue
+      // vprasanje / skupinski / glasovanje / dogodek → single continue
       actions.innerHTML = `<button class="btn" data-act="next">Naprej →</button>`;
       actions.querySelector('[data-act="next"]').onclick = () => { ctx.audio.success(); p.done++; advance(); };
     }
@@ -612,6 +671,12 @@ export function GameScreen(ctx) {
 
   function advance() {
     ctx.nextTurn();
+    // one tick per turn: a rule is visible for exactly `players.length` turns
+    // (one per player) from the moment it's activated, however far into the
+    // current round that was — always exactly one full lap of the table.
+    state.activeRules = (state.activeRules || [])
+      .map((r) => ({ ...r, turnsLeft: r.turnsLeft - 1 }))
+      .filter((r) => r.turnsLeft >= 0);
     ctx.drawCard();
     ctx.save();
     revealed = false;
@@ -739,6 +804,7 @@ export function GameSettingsModal(ctx) {
           ${shakeOn ? "Vključeno" : "Izključeno"}
         </button>
       </div>
+      <button class="btn btn-ghost" data-act="reveal-help" style="margin-top:10px">ℹ️ Kako razkriti karto?</button>
       <div class="stack" style="margin-top:18px">
         <button class="btn btn-danger" data-act="end">Končaj igro ⏹</button>
         <button class="btn btn-ghost" data-act="cancel">Nadaljuj igro</button>
@@ -750,8 +816,60 @@ export function GameSettingsModal(ctx) {
       ctx.save();
       render();
     };
+    node.querySelector('[data-act="reveal-help"]').onclick = () => { ctx.audio.pop(); ctx.showRevealHelp(); };
     node.querySelector('[data-act="end"]').onclick = () => { ctx.audio.pop(); ctx.closeModal(); ctx.go("summary"); };
     node.querySelector('[data-act="cancel"]').onclick = () => { ctx.audio.pop(); ctx.closeModal(); };
+  }
+
+  const node = el(`<div class="modal-backdrop"><div class="modal"></div></div>`);
+  render();
+  return node;
+}
+
+/* which of the 7 card types get dealt into the deck this game — reused for
+   every difficulty/mode until changed. `onClose` (optional) lets the caller
+   refresh a summary label after the modal closes. */
+export function CardTypeModal(ctx, onClose) {
+  const { state } = ctx;
+
+  function render() {
+    const rows = Object.entries(CARD_TYPES).map(([key, t]) => {
+      const on = state.cardTypeFilters[key] !== false;
+      return `
+        <div class="settings-row">
+          <span>${t.emoji} ${t.label}</span>
+          <button class="toggle-btn ${on ? "on" : ""}" data-type="${key}">
+            ${on ? "Vključeno" : "Izključeno"}
+          </button>
+        </div>`;
+    }).join("");
+    node.querySelector('.modal').innerHTML = `
+      <div class="big-emoji">🃏</div>
+      <h2>Vrste kartic</h2>
+      <p>Izberi, katere vrste kartic se pojavljajo v igri.</p>
+      ${rows}
+      <p class="hint" style="margin-top:10px">Vsaj ena vrsta mora ostati vključena.</p>
+      <div class="stack" style="margin-top:14px">
+        <button class="btn" data-act="close">Shrani ✓</button>
+      </div>
+    `;
+    node.querySelectorAll("[data-type]").forEach((b) => {
+      b.onclick = () => {
+        const key = b.dataset.type;
+        const activeCount = Object.values(state.cardTypeFilters).filter(Boolean).length;
+        const isOn = state.cardTypeFilters[key] !== false;
+        if (isOn && activeCount <= 1) return; // never allow zero types selected
+        ctx.audio.pop();
+        state.cardTypeFilters[key] = !isOn;
+        ctx.save();
+        render();
+      };
+    });
+    node.querySelector('[data-act="close"]').onclick = () => {
+      ctx.audio.pop();
+      ctx.closeModal();
+      if (onClose) onClose();
+    };
   }
 
   const node = el(`<div class="modal-backdrop"><div class="modal"></div></div>`);
@@ -787,8 +905,39 @@ export function HowToModal(ctx) {
         <p style="text-align:left">1️⃣ Vnesi imena igralcev (2–10).</p>
         <p style="text-align:left">2️⃣ Izberi način in težavnost.</p>
         <p style="text-align:left">3️⃣ Telefon kroži med igralci. Vsak dobi karto:</p>
-        <p style="text-align:left;margin-left:10px">💬 vprašanje • 🎯 izziv • 👥 skupinski • 🍺 pij</p>
-        <p style="text-align:left">4️⃣ Izziv lahko <b>preskočiš</b> — a piješ kazenske požirke!</p>
+        <p style="text-align:left;margin-left:10px">💬 vprašanje • 🎯 izziv • 👥 skupinski • 🍺 pij<br>🗳️ glasovanje • ⚡ pravilo • 🎲 dogodek</p>
+        <p style="text-align:left;margin-left:10px">👆 Karto razkriješ s <b>tapom</b>, <b>stresanjem</b> ali <b>nagibom</b> telefona.</p>
+        <p style="text-align:left;margin-left:10px">🃏 Vrste kartic si lahko prilagodiš na zaslonu za izbiro načina.</p>
+        <p style="text-align:left">4️⃣ Izziv lahko <b>preskočiš</b> — a piješ kazenske požirke! Koliko preskokov imaš na voljo za celo igro, izbereš posebej ob težavnosti (Neomejeno / 3x / 1x).</p>
+        <p style="text-align:left">5️⃣ <b>⚡ Pravilo</b> velja za vse do konca tega kroga — ostane prikazano na vrhu zaslona, dokler ne poteče.</p>
+        <p style="text-align:left">6️⃣ <b>🗳️ Glasovanje</b> in <b>🎲 dogodek</b> odloči cela miza — brez pravega odgovora, samo zabava!</p>
+        <div class="stack" style="margin-top:14px">
+          <button class="btn" data-act="ok">Razumem! 👍</button>
+        </div>
+      </div>
+    </div>
+  `);
+  node.querySelector('[data-act="ok"]').onclick = () => { ctx.audio.pop(); ctx.closeModal(); };
+  return node;
+}
+
+export function RevealHelpModal(ctx) {
+  const node = el(`
+    <div class="modal-backdrop">
+      <div class="modal" style="text-align:left">
+        <div class="big-emoji" style="text-align:center">🃏</div>
+        <h2 style="text-align:center">Kako razkriti karto</h2>
+        <p style="text-align:left">Karto obrneš na tri načine:</p>
+        <p style="text-align:left;margin-left:6px">👆 <b>Tapni</b> kartico na sredini zaslona.</p>
+        <p style="text-align:left;margin-left:6px">📳 <b>Stresi</b> telefon z eno hitro kretnjo.</p>
+        <p style="text-align:left;margin-left:6px">📲 <b>Nagni</b> telefon naprej (kot da piješ) in za hip pridrži.</p>
+        <div class="help-tip">
+          <b>📱 iPhone nasvet</b><br>
+          Če stresanje ne deluje, iOS prestreza kretnjo. Izklopi jo v:<br>
+          <b>Nastavitve → Dostopnost → Dotik → Stresi za razveljavitev</b><br>
+          Ali pa preprosto uporabi <b>nagib</b> ali <b>tap</b> — vedno delujeta. 😉
+        </div>
+        <p class="hint" style="text-align:left;margin-top:12px">Stresanje/nagib lahko izklopiš v ⚙️ nastavitvah.</p>
         <div class="stack" style="margin-top:14px">
           <button class="btn" data-act="ok">Razumem! 👍</button>
         </div>

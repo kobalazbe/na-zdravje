@@ -13,7 +13,7 @@ import * as entitlement from "./entitlement.js";
 import { track } from "./analytics.js";
 import {
   HomeScreen, SetupScreen, ModeScreen, GameScreen, SummaryScreen,
-  AdultGateModal, QuitModal, GameSettingsModal, HowToModal, PaywallModal, LoginScreen,
+  AdultGateModal, QuitModal, GameSettingsModal, HowToModal, RevealHelpModal, CardTypeModal, PaywallModal, LoginScreen,
   CustomCardsScreen,
 } from "./screens.js";
 import {
@@ -101,7 +101,8 @@ const ctx = {
     } else {
       state.customCards = [];
     }
-    state.deck = buildDeck(state.mode, state.difficulty, state.includeDrinks);
+    state.pool = buildDeck(state.mode, state.difficulty, state.cardTypeFilters);
+    state.deck = state.pool.slice();
     state.current = null;
     drawCard(state);
     closeModal();
@@ -109,7 +110,8 @@ const ctx = {
   },
   playAgain() {
     resetRound();
-    state.deck = buildDeck(state.mode, state.difficulty, state.includeDrinks);
+    state.pool = buildDeck(state.mode, state.difficulty, state.cardTypeFilters);
+    state.deck = state.pool.slice();
     state.current = null;
     drawCard(state);
     this.go("game");
@@ -245,6 +247,8 @@ const ctx = {
   confirmQuit() { openModal(QuitModal); },
   openGameSettings() { openModal(GameSettingsModal); },
   showHowTo() { openModal(HowToModal); },
+  showRevealHelp() { openModal(RevealHelpModal); },
+  showCardTypeFilter(onClose) { openModal((c) => CardTypeModal(c, onClose)); },
   closeModal,
 };
 

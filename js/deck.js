@@ -25,19 +25,21 @@ function shuffle(arr) {
 }
 
 /**
- * Build a fresh shuffled deck for the chosen mode + difficulty.
- * Free tier: Pikantno yields nothing (gated at the UI), and Klasično is
- * capped to FREE_LIMITS so repeats arrive fast (a conversion trigger).
+ * Build the fixed card pool for a NEW game (called once, at game start —
+ * see ctx.startGame()/ctx.playAgain()). Free tier samples a capped subset
+ * that stays fixed for the whole game (a conversion trigger once it's fully
+ * seen), rather than resampling a new random subset on every reshuffle —
+ * that used to let a card reappear well before the pool actually cycled.
  */
-export function buildDeck(mode, difficulty, includeDrinks = true) {
+export function buildDeck(mode, difficulty, filters) {
   let cards = (LIBRARY[mode]?.[difficulty] || []).slice();
-  if (!includeDrinks) cards = cards.filter((c) => c.type !== "pijaca");
+  cards = cards.filter((c) => filters[c.type] !== false);
 
   if (!isPremium()) {
     const cap = FREE_LIMITS[mode]?.[difficulty] ?? 0;
     cards = shuffle(cards).slice(0, cap); // sample the cap, then we re-shuffle below
   } else if (state.customCards?.length) {
-    const customs = state.customCards.filter((c) => includeDrinks || c.type !== "pijaca");
+    const customs = state.customCards.filter((c) => filters[c.type] !== false);
     cards = cards.concat(customs);
   }
   return shuffle(cards);
@@ -51,10 +53,11 @@ function teaserCard() {
 }
 
 /**
- * Draw the next card. Reshuffles a fresh deck when empty so play never ends
- * on its own. Free tier: every Nth draw is a locked premium teaser, and the
- * first reshuffle raises `state.repeated` so the UI can nudge.
- * Mutates `state` and returns the drawn card.
+ * Draw the next card. Reshuffles the fixed `state.pool` when the working
+ * deck empties so play never ends on its own — a card can only repeat after
+ * every other card in the pool has already been shown this game. Free tier:
+ * every Nth draw is a locked premium teaser, and the first reshuffle raises
+ * `state.repeated` so the UI can nudge. Mutates `state` and returns the card.
  */
 export function drawCard(state) {
   const premium = isPremium();
@@ -70,8 +73,13 @@ export function drawCard(state) {
   }
 
   if (!state.deck || state.deck.length === 0) {
-    if (state.deck && state.cardsPlayed > 0 && !premium) state.repeated = true; // ran through the capped pool
-    state.deck = buildDeck(state.mode, state.difficulty, state.includeDrinks);
+    if (state.deck && state.cardsPlayed > 0 && !premium) state.repeated = true; // ran through the pool once
+    // reuse the fixed per-game pool (never re-sample) — fall back to building
+    // it if missing (e.g. a save from before `state.pool` existed)
+    if (!state.pool || state.pool.length === 0) {
+      state.pool = buildDeck(state.mode, state.difficulty, state.cardTypeFilters);
+    }
+    state.deck = shuffle(state.pool);
   }
 
   let card = state.deck.pop();
