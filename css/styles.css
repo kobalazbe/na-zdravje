@@ -112,6 +112,7 @@ body {
 .subtitle { text-align: center; color: var(--ink-soft); font-size: 1.05rem; margin-top: 14px; }
 .section-title { font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; text-align: center; }
 .hint { color: var(--ink-soft); font-size: .92rem; text-align: center; }
+.hint a { color: inherit; text-decoration: underline; }
 
 /* ===========================================================
    Buttons
@@ -683,6 +684,14 @@ body {
   text-decoration: underline; text-align: center; width: 100%;
 }
 .btn-forgot:hover { color: var(--accent); }
+
+.auth-consent {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-size: .8rem; color: var(--ink-soft); line-height: 1.35;
+  cursor: pointer; padding: 2px 0;
+}
+.auth-consent input { flex-shrink: 0; margin-top: 3px; width: 16px; height: 16px; accent-color: var(--accent); }
+.auth-consent a { color: var(--accent); font-weight: 600; }
 
 /* "Play as guest" — quiet alternative under the auth card */
 .btn-guest {

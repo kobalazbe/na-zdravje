@@ -65,6 +65,11 @@ export function HomeScreen(ctx) {
         <div style="margin-top:8px">${premiumBlock}</div>
       </div>
       <p class="hint" style="margin-top:18px">Pij odgovorno. Igra je namenjena odraslim. 🔞</p>
+      <p class="hint" style="margin-top:4px;font-size:.78rem">
+        <a href="terms.html" target="_blank" rel="noopener">Pogoji</a> ·
+        <a href="privacy.html" target="_blank" rel="noopener">Zasebnost</a> ·
+        <a href="impressum.html" target="_blank" rel="noopener">Impresum</a>
+      </p>
     </section>
   `);
 
@@ -768,6 +773,43 @@ export function SummaryScreen(ctx) {
 /* ===========================================================
    MODALS
    =========================================================== */
+/* One-time gate shown before the very first screen of the app is used.
+   Na Zdravje! is fundamentally an alcohol-drinking game — Klasično mode
+   already has "pijaca"/sip mechanics — so the age + responsible-use notice
+   belongs in front of the whole app, not just the Pikantno mode. */
+export function AgeGateModal(ctx) {
+  const node = el(`
+    <div class="modal-backdrop">
+      <div class="modal">
+        <div class="big-emoji">🔞</div>
+        <h2>Preden začneš</h2>
+        <p><b>Na Zdravje!</b> je igra, povezana z uživanjem alkohola, in je namenjena
+        izključno osebam, starim <b>18 let ali več</b>. Igraj in pij odgovorno.</p>
+        <p class="hint">S potrditvijo se strinjaš tudi s <a href="terms.html" target="_blank" rel="noopener">pogoji uporabe</a>
+        in <a href="privacy.html" target="_blank" rel="noopener">politiko zasebnosti</a>.</p>
+        <div class="stack">
+          <button class="btn" data-act="yes">Sem polnoleten/a 🍻</button>
+          <button class="btn btn-ghost" data-act="no">Nisem</button>
+        </div>
+      </div>
+    </div>
+  `);
+  node.querySelector('[data-act="yes"]').onclick = () => {
+    ctx.audio.pop();
+    ctx.state.ageAcknowledged = true;
+    ctx.save();
+    ctx.closeModal();
+  };
+  node.querySelector('[data-act="no"]').onclick = () => {
+    node.querySelector(".modal").innerHTML = `
+      <div class="big-emoji">🙅</div>
+      <h2>Žal nam je</h2>
+      <p>Igra ni namenjena mladoletnim osebam. Vrni se, ko dopolniš 18 let.</p>
+    `;
+  };
+  return node;
+}
+
 export function AdultGateModal(ctx) {
   const node = el(`
     <div class="modal-backdrop">
@@ -980,7 +1022,7 @@ export function PaywallModal(ctx, source = "generic", onDismiss) {
 
         <div class="tier-list">${tiers}</div>
 
-        <button class="btn" data-act="verify" style="display:none">✓ Plačal sem — preveri dostop</button>
+        <button class="btn" data-act="verify">✓ Plačal sem — preveri dostop</button>
 
         <div class="redeem">
           <input class="text-input" id="redeemInput" placeholder="Imaš kodo? Vnesi jo…" autocomplete="off" />
@@ -1005,14 +1047,7 @@ export function PaywallModal(ctx, source = "generic", onDismiss) {
       // A guest has no account to attach the purchase to — pop up a prompt to
       // register / log in. Their game is kept either way.
       if (isGuest) { ctx.promptGuestRegister(); return; }
-      const opened = ctx.startCheckout(b.dataset.tier);
-      if (!opened) {
-        msg.textContent = "Plačilo pride kmalu. Imaš kodo? Vnesi jo spodaj. 👇";
-      } else {
-        // startCheckout navigates away; if for some reason we're still here, show verify
-        verifyBtn.style.display = "";
-        msg.textContent = "Odpira Stripe... Ko zaključiš, se vrni in klikni gumb zgoraj.";
-      }
+      ctx.showCheckoutConsent(b.dataset.tier);
     };
   });
 
@@ -1050,6 +1085,57 @@ export function PaywallModal(ctx, source = "generic", onDismiss) {
   return node;
 }
 
+/* Shown right before Stripe checkout — captures the explicit consent required
+   to waive the EU/Slovenian 14-day right of withdrawal for digital content
+   delivered immediately (ZVPot-1). Without this checked confirmation, a
+   customer could legally demand a refund on any digital purchase within 14
+   days regardless of usage. */
+export function CheckoutConsentModal(ctx, tier) {
+  const plan = PRICING.find((p) => p.id === tier);
+  const node = el(`
+    <div class="modal-backdrop">
+      <div class="modal">
+        <div class="big-emoji">${plan?.emoji || "🔒"}</div>
+        <h2>Potrditev nakupa</h2>
+        <p><b>${esc(plan?.name || "Premium")}</b> — ${esc(plan?.price || "")} ${esc(plan?.sub || "")}</p>
+        <label class="auth-consent" style="text-align:left;margin-top:10px">
+          <input type="checkbox" id="checkout-consent-chk" />
+          <span>Strinjam se s <a href="terms.html" target="_blank" rel="noopener">pogoji uporabe</a>
+          in <a href="privacy.html" target="_blank" rel="noopener">politiko zasebnosti</a>. Izrecno
+          zahtevam, da se z izvajanjem storitve začne takoj, in razumem, da s tem izgubim
+          14-dnevno pravico do odstopa od pogodbe za digitalno vsebino.</span>
+        </label>
+        <p class="hint" id="checkout-consent-msg" style="min-height:18px"></p>
+        <div class="stack" style="margin-top:10px">
+          <button class="btn" data-act="confirm" disabled>Nadaljuj na plačilo →</button>
+          <button class="btn btn-ghost" data-act="cancel">Prekliči</button>
+        </div>
+      </div>
+    </div>
+  `);
+
+  const chk = node.querySelector("#checkout-consent-chk");
+  const confirmBtn = node.querySelector('[data-act="confirm"]');
+  const msg = node.querySelector("#checkout-consent-msg");
+
+  chk.addEventListener("change", () => { confirmBtn.disabled = !chk.checked; });
+
+  confirmBtn.onclick = () => {
+    ctx.audio.pop();
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = "Preusmerjam na Stripe...";
+    const opened = ctx.startCheckout(tier);
+    if (!opened) {
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = "Nadaljuj na plačilo →";
+      msg.textContent = "Plačilo za ta paket še ni na voljo.";
+    }
+  };
+  node.querySelector('[data-act="cancel"]').onclick = () => { ctx.audio.pop(); ctx.closeModal(); };
+
+  return node;
+}
+
 /* ===========================================================
    LOGIN / SIGNUP / FORGOT / RESET
    =========================================================== */
@@ -1075,6 +1161,11 @@ export function LoginScreen(ctx, initialMode = "login") {
           <input class="input" id="auth-name" type="text" placeholder="Tvoje ime" autocomplete="name" maxlength="24" style="display:none" />
           <input class="input" id="auth-email" type="email" placeholder="E-pošta" autocomplete="email" inputmode="email" />
           <input class="input" id="auth-pass" type="password" placeholder="Geslo (min. 6 znakov)" autocomplete="current-password" />
+          <label class="auth-consent" id="auth-consent" style="display:none">
+            <input type="checkbox" id="auth-consent-chk" />
+            <span>Strinjam se s <a href="terms.html" target="_blank" rel="noopener">pogoji uporabe</a>
+            in <a href="privacy.html" target="_blank" rel="noopener">politiko zasebnosti</a>.</span>
+          </label>
           <button class="btn btn-lg" id="auth-submit">Prijava</button>
           <p id="auth-err" class="hint" style="text-align:center;min-height:18px;font-weight:600"></p>
           <button class="btn btn-ghost" id="auth-toggle">Nimaš računa? Registracija →</button>
@@ -1083,6 +1174,10 @@ export function LoginScreen(ctx, initialMode = "login") {
       </div>
       <button class="btn-guest" id="auth-guest">🎲 Igraj kot gost</button>
       <div class="grow"></div>
+      <p class="hint" style="text-align:center">
+        Z nadaljevanjem se strinjaš s <a href="terms.html" target="_blank" rel="noopener">pogoji uporabe</a>
+        in <a href="privacy.html" target="_blank" rel="noopener">politiko zasebnosti</a>.
+      </p>
       <p class="hint" style="text-align:center">Pij odgovorno. Igra je namenjena odraslim. 🔞</p>
     </section>
   `);
@@ -1098,6 +1193,8 @@ export function LoginScreen(ctx, initialMode = "login") {
   const googleEl  = node.querySelector("#auth-google");
   const dividerEl = node.querySelector("#auth-divider");
   const guestEl   = node.querySelector("#auth-guest");
+  const consentEl = node.querySelector("#auth-consent");
+  const consentChk = node.querySelector("#auth-consent-chk");
 
   function setMode(m) {
     mode = m;
@@ -1117,6 +1214,11 @@ export function LoginScreen(ctx, initialMode = "login") {
     googleEl.style.display  = showGoogle ? "" : "none";
     dividerEl.style.display = showGoogle ? "" : "none";
     guestEl.style.display   = showGoogle ? "" : "none";
+    // Explicit ToS/Privacy agreement is only asked for at account creation —
+    // a returning user already agreed once, and Google-in-login-mode is
+    // covered by the static disclosure line under the card.
+    consentEl.style.display = (m === "signup") ? "" : "none";
+    if (m !== "signup") consentChk.checked = false;
 
     if (m === "login") {
       titleEl.textContent  = "Prijava";
@@ -1149,6 +1251,10 @@ export function LoginScreen(ctx, initialMode = "login") {
   guestEl.onclick = () => { ctx.audio.pop(); ctx.continueAsGuest(); };
 
   googleEl.onclick = async () => {
+    if (mode === "signup" && !consentChk.checked) {
+      errEl.textContent = "Najprej potrdi strinjanje s pogoji uporabe in politiko zasebnosti.";
+      return;
+    }
     errEl.textContent = "";
     googleEl.disabled = true;
     googleEl.classList.add("is-loading");
@@ -1162,6 +1268,10 @@ export function LoginScreen(ctx, initialMode = "login") {
   };
 
   submitEl.onclick = async () => {
+    if (mode === "signup" && !consentChk.checked) {
+      errEl.textContent = "Najprej potrdi strinjanje s pogoji uporabe in politiko zasebnosti.";
+      return;
+    }
     const email = emailEl.value.trim();
     const pass  = passEl.value;
     errEl.textContent = "";

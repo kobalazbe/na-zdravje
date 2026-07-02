@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#ff6b6b" />
+  <meta name="robots" content="noindex" />
+  <title>Politika zasebnosti — Na Zdravje! 🍻</title>
+  <link rel="stylesheet" href="css/fonts.css" />
+  <link rel="stylesheet" href="css/legal.css" />
+</head>
+<body>
+  <div class="legal-wrap">
+    <a class="legal-back" href="landing.html">← Nazaj</a>
+    <div class="legal-card">
+      <h1>Politika zasebnosti</h1>
+      <p class="legal-updated">Velja od: <span class="legal-placeholder">[VSTAVI DATUM OBJAVE]</span></p>
+
+      <p>Ta politika zasebnosti pojasnjuje, katere osebne podatke zbiramo pri uporabi igre
+      <b>Na Zdravje!</b> (v nadaljevanju "storitev"), zakaj jih obdelujemo in katere pravice
+      imate v zvezi z njimi. Skladna je z Splošno uredbo o varstvu podatkov (GDPR) in
+      slovenskim Zakonom o varstvu osebnih podatkov (ZVOP-2).</p>
+
+      <h2>1. Upravljavec podatkov</h2>
+      <p>
+        <span class="legal-placeholder">[VSTAVI URADNI NAZIV PONUDNIKA / OSEBE]</span><br>
+        <span class="legal-placeholder">[VSTAVI NASLOV SEDEŽA]</span><br>
+        E-pošta: <a href="mailto:nazdravjeapp@gmail.com">nazdravjeapp@gmail.com</a>
+      </p>
+
+      <h2>2. Katere podatke zbiramo</h2>
+      <ul>
+        <li><b>Podatki o računu</b> — e-poštni naslov, geslo (shranjeno šifrirano, mi ga ne vidimo), izbrano prikazno ime. Če se prijavite z Google računom, prejmemo tudi vaše ime, e-pošto in profilno sliko, kot jih deli Google.</li>
+        <li><b>Podatki o naročnini</b> — plačila obdeluje Stripe; mi ne shranjujemo številk plačilnih kartic. Prejmemo le vaš e-poštni naslov, izbrani paket (Žur Pass / Mesečno / Letno) in status naročnine, da lahko odklenemo Premium vsebino.</li>
+        <li><b>Vsebina, ki jo ustvarite</b> — lastne kartice, ki jih dodate v Premium načinu, so shranjene v naši bazi (Supabase) in povezane z vašim računom.</li>
+        <li><b>Podatki o igri na napravi</b> — imena igralcev, izbrane nastavitve in napredek igre se shranjujejo <b>samo lokalno</b> v pomnilniku vaše naprave (localStorage) in se ne pošiljajo na naš strežnik.</li>
+        <li><b>Tehnični podatki</b> — IP naslov in standardni dnevniki dostopa, ki jih samodejno beležijo naši ponudniki gostovanja (glej razdelek 4) zaradi delovanja in varnosti storitve.</li>
+        <li><b>Lokalna statistika uporabe</b> — število odigranih kart, ogledov ponudbe ipd. se šteje izključno lokalno v vaši napravi (localStorage), brez pošiljanja tretjim osebam ali povezovanja z vašo identiteto.</li>
+      </ul>
+
+      <h2>3. Zakaj obdelujemo vaše podatke</h2>
+      <ul>
+        <li><b>Izvajanje pogodbe</b> (čl. 6(1)(b) GDPR) — ustvarjanje in vodenje računa, zagotavljanje Premium dostopa po plačilu.</li>
+        <li><b>Zakonska obveznost</b> (čl. 6(1)(c) GDPR) — vodenje računovodskih evidenc o prodaji, obračun DDV.</li>
+        <li><b>Zakoniti interes</b> (čl. 6(1)(f) GDPR) — preprečevanje zlorab, varnost storitve, odpravljanje napak.</li>
+        <li><b>Privolitev</b> (čl. 6(1)(a) GDPR) — kjer jo izrecno zahtevamo (npr. pri potrditvi odpovedi pravice do odstopa ob nakupu).</li>
+      </ul>
+
+      <h2>4. S kom delimo podatke</h2>
+      <p>Podatke obdelujejo naslednji ponudniki storitev (obdelovalci) v našem imenu:</p>
+      <ul>
+        <li><b>Supabase</b> — baza podatkov, avtentikacija uporabnikov in gostovanje strežniških funkcij.</li>
+        <li><b>Stripe</b> — obdelava plačil in naročnin. Stripe je certificiran ponudnik plačilnih storitev (PCI-DSS); podatkov o plačilnih karticah nikoli ne vidimo mi.</li>
+        <li><b>Google</b> — prijava prek Google računa (Google OAuth), če to možnost izberete.</li>
+        <li><b>Vercel</b> — gostovanje spletne strani.</li>
+      </ul>
+      <p>Ti ponudniki lahko podatke obdelujejo tudi zunaj EU/EGP; v tem primeru se zanašajo na
+      ustrezne mehanizme prenosa podatkov (npr. Standardne pogodbene klavzule EU). Podatkov ne
+      prodajamo in jih ne delimo v trženjske namene tretjim osebam.</p>
+
+      <h2>5. Piškotki in podobne tehnologije</h2>
+      <p>Ne uporabljamo sledilnih piškotkov ali analitike tretjih oseb (npr. Google Analytics).
+      Uporabljamo izključno <code>localStorage</code> vašega brskalnika za shranjevanje stanja
+      igre, nastavitev in lokalnega štetja uporabe — to je nujno potrebno za delovanje storitve
+      in ne zahteva privolitve po Zakonu o elektronskih komunikacijah (ZEKom-2). Prijava prek
+      Google in Stripe plačilna stran lahko nastavita lastne piškotke skladno s svojimi
+      politikami zasebnosti.</p>
+
+      <h2>6. Hramba podatkov</h2>
+      <p>Podatke o računu hranimo, dokler je vaš račun aktiven. Po izbrisu računa podatke
+      izbrišemo v razumnem roku (praviloma do 30 dni), razen kadar zakon zahteva daljšo hrambo
+      (npr. računovodski dokumenti, ki jih moramo hraniti skladno z davčno zakonodajo).</p>
+
+      <h2>7. Vaše pravice</h2>
+      <p>Skladno z GDPR imate pravico do:</p>
+      <ul>
+        <li>dostopa do svojih osebnih podatkov,</li>
+        <li>popravka netočnih podatkov,</li>
+        <li>izbrisa podatkov ("pravica do pozabe"),</li>
+        <li>omejitve obdelave,</li>
+        <li>prenosljivosti podatkov,</li>
+        <li>ugovora obdelavi na podlagi zakonitega interesa,</li>
+        <li>vložitve pritožbe pri nadzornem organu.</li>
+      </ul>
+      <p>Zahtevo za uveljavljanje katere koli od teh pravic pošljite na
+      <a href="mailto:nazdravjeapp@gmail.com">nazdravjeapp@gmail.com</a>. Odgovorimo najkasneje
+      v 30 dneh.</p>
+      <p>Pritožbo lahko vložite tudi pri slovenskem nadzornem organu: <b>Informacijski
+      pooblaščenec RS</b>, Dunajska cesta 22, 1000 Ljubljana, <a href="mailto:gp.ip@ip-rs.si">gp.ip@ip-rs.si</a>.</p>
+
+      <h2>8. Varnost podatkov</h2>
+      <p>Povezava do storitve je šifrirana (HTTPS). Gesla so shranjena zgoščena (hashed), mi jih
+      nikoli ne vidimo v berljivi obliki. Dostop do podatkov je omejen na tisto, kar je nujno
+      potrebno za delovanje storitve.</p>
+
+      <h2>9. Mladoletne osebe</h2>
+      <p>Storitev vključuje vsebine, povezane z uživanjem alkohola, in ni namenjena osebam,
+      mlajšim od 18 let. Zavestno ne zbiramo podatkov o mladoletnih osebah. Če menite, da smo
+      po pomoti zbrali podatke o mladoletni osebi, nas obvestite na zgornji e-naslov in jih bomo
+      nemudoma izbrisali.</p>
+
+      <h2>10. Spremembe te politike</h2>
+      <p>To politiko lahko občasno posodobimo. O bistvenih spremembah vas obvestimo prek
+      e-pošte ali obvestila v aplikaciji. Datum zadnje spremembe je naveden na vrhu strani.</p>
+
+      <h2>11. Kontakt</h2>
+      <p>Za vsa vprašanja v zvezi s to politiko zasebnosti nas kontaktirajte na
+      <a href="mailto:nazdravjeapp@gmail.com">nazdravjeapp@gmail.com</a>.</p>
+
+      <div class="legal-note">
+        Polja, označena z <span class="legal-placeholder">rumeno</span>, je treba pred javno
+        objavo storitve dopolniti z resničnimi podatki o pravnem subjektu, ki ponuja storitev.
+      </div>
+    </div>
+  </div>
+</body>
+</html>

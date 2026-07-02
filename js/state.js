@@ -94,6 +94,7 @@ function freshState() {
       glasovanje: true, pravilo: true, dogodek: true,
     },
     adultConfirmed: false,
+    ageAcknowledged: false, // one-time "I'm 18+, I'll drink responsibly" gate for the whole app
     // runtime game data
     turn: 0,               // index into players
     round: 1,

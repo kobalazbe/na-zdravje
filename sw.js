@@ -1,9 +1,18 @@
-const CACHE = 'na-zdravje-v28';
+const CACHE = 'na-zdravje-v29';
 const PRECACHE = [
   '/index.html',
   '/landing.html',
+  '/privacy.html',
+  '/terms.html',
+  '/impressum.html',
   '/css/styles.css',
   '/css/landing.css',
+  '/css/legal.css',
+  '/css/fonts.css',
+  '/fonts/fredoka-latin.woff2',
+  '/fonts/fredoka-latin-ext.woff2',
+  '/fonts/baloo2-latin.woff2',
+  '/fonts/baloo2-latin-ext.woff2',
   '/js/app.js',
   '/js/state.js',
   '/js/screens.js',
@@ -38,7 +47,7 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-  // Skip Google Fonts and any cross-origin requests
+  // Skip cross-origin requests (Supabase, Stripe, Google OAuth, ...)
   if (url.origin !== location.origin) return;
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
