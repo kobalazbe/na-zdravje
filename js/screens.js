@@ -1013,7 +1013,7 @@ export function PaywallModal(ctx, source = "generic", onDismiss) {
       <div class="modal paywall">
         <div class="big-emoji">👑</div>
         <h2>Odkleni vse</h2>
-        <p>Pikantno 18+, vse težavnosti in 100+ kart. En nakup za vso družbo.</p>
+        <p class="paywall-desc">Pikantno 18+, vse težavnosti in 100+ kart. En nakup za vso družbo.</p>
 
         <div class="peek">
           <span class="peek-tag">🔒 Pikantno</span>
@@ -1031,7 +1031,7 @@ export function PaywallModal(ctx, source = "generic", onDismiss) {
         <p class="redeem-msg hint" id="redeemMsg"></p>
 
         <button class="btn btn-ghost" data-act="close">Mogoče kasneje</button>
-        <p class="hint" style="margin-top:8px">🎟️ Žur Pass odklene vse za 48 ur.</p>
+        <p class="hint" style="margin-top:2px;font-size:.78rem">🎟️ Žur Pass odklene vse za 48 ur.</p>
       </div>
     </div>
   `);
