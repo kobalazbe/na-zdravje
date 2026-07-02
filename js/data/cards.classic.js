@@ -399,14 +399,13 @@ export const CLASSIC = {
 
     /* -- pravila -- */
     { type: "pravilo", text: "Ta krog vsi govorijo v tretji osebi ('Ana meni, da ...'). Napaka = 2 požirka." },
-    { type: "pravilo", text: "Zapomni si geslo: OGENJ 🔥. Do konca kroga kdor ga izgovori, pije 3." },
+    { type: "pravilo", text: "Zapomni si geslo: ŽURKA 🔥. Do konca kroga kdor ga izgovori, pije 3." },
     { type: "pravilo", text: "Izberi 'usodnega partnerja'. Ta krog: ko pije eden, pijeta oba dvojno. 💞" },
     { type: "pravilo", text: "Prepovedan je smeh. Kdor se prvi zasmeje do konca kroga, pije 3. 😐" },
     { type: "pravilo", text: "Pred vsako pijačo razkri eno majhno resnico. Velja do konca kroga. 🤐" },
     { type: "pravilo", text: "Izberi 'grešnega kozla': ta krog, ko kdo pije, pije tudi on. 🐐" },
     { type: "pravilo", text: "Vsak stavek mora vsebovati kompliment nekomu za mizo. Kdor pozabi, pije 2. Velja do konca kroga. 💫" },
     { type: "pravilo", text: "Izberi 'svojega dvojnika za greh': ta krog tvoje kazni prevzame on. 😈" },
-    { type: "pravilo", text: "Zapomni si: PEKEL 🔥. Do konca kroga kdor to besedo izgovori, pije 3." },
     { type: "pravilo", text: "Do konca kroga moraš stati, kadar koli piješ. Kršitelj pije dvojno." },
     { type: "pravilo", text: "Vsak mora zarenčati, preden spregovori. Kdor pozabi, pije 2. 🐺" },
     { type: "pravilo", text: "Izberi 'vohuna': mora vsak krog razkriti eno resnico ali pije 3. 🕵️" },
