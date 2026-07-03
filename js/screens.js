@@ -280,7 +280,13 @@ export function ModeScreen(ctx) {
     }
   }
 
-  node.querySelector('[data-act="play"]').onclick = triggerPlay;
+  node.querySelector('[data-act="play"]').onclick = () => {
+    // Prime iOS motion permission while we still hold a user gesture, so the
+    // first (hidden) card in the game can be revealed by shaking/tilting and
+    // not only by tapping. Fire-and-forget; the game screen awaits this grant.
+    primeMotionPermission();
+    triggerPlay();
+  };
 
   // ---- tilt-to-start ----
   const tiltArea = node.querySelector("#tiltArea");
@@ -347,6 +353,34 @@ export function ModeScreen(ctx) {
   return node;
 }
 
+/* ---- iOS motion permission (shared, origin-wide) ----
+   iOS 13+ gates devicemotion/deviceorientation behind a permission that can
+   only be requested from inside a user gesture. We prime it on the "Igraj!"
+   tap so the very first — now hidden — card can be revealed by shaking or
+   tilting, not only by tapping. Requesting DeviceMotionEvent permission also
+   unlocks deviceorientation (tilt) on iOS, so one prompt covers both.
+   Tracked at module scope because the grant is per-origin, and returned as a
+   single shared promise so the game screen can await the same pending grant
+   instead of re-prompting. */
+const motionNeedsPerm =
+  typeof DeviceMotionEvent !== "undefined" &&
+  typeof DeviceMotionEvent.requestPermission === "function";
+let _motionPromise = null;
+let _motionGranted = false;
+function primeMotionPermission() {
+  if (_motionPromise) return _motionPromise;
+  if (!motionNeedsPerm) {
+    _motionGranted = true;
+    _motionPromise = Promise.resolve(true);
+    return _motionPromise;
+  }
+  // must run synchronously inside the triggering user gesture on iOS
+  _motionPromise = DeviceMotionEvent.requestPermission()
+    .then((perm) => { _motionGranted = perm === "granted"; return _motionGranted; })
+    .catch(() => { _motionGranted = false; return false; });
+  return _motionPromise;
+}
+
 /* ===========================================================
    GAME
    =========================================================== */
@@ -376,9 +410,6 @@ export function GameScreen(ctx) {
   const TILT_REARM = 45;               // beta above this = reading pos → re-arm tilt
   const TILT_HOLD = 350;               // ms the lean must be held to trigger
   const canShake = "ontouchstart" in window;  // only hint motion on touch devices
-  const needsMotionPerm =
-    typeof DeviceMotionEvent !== "undefined" &&
-    typeof DeviceMotionEvent.requestPermission === "function";  // iOS 13+
 
   function flipByMotion() {
     if (state.revealed || state.screen !== "game" || !state.shakeEnabled) return false;
@@ -424,7 +455,10 @@ export function GameScreen(ctx) {
     }
   }
 
+  let motionStarted = false;
   function startMotion() {
+    if (motionStarted) return;              // guard against double-attaching listeners
+    motionStarted = true;
     window.addEventListener("devicemotion", onMotion);
     window.addEventListener("deviceorientation", onTilt);
     ctx.setTiltCleanup(() => {
@@ -434,20 +468,17 @@ export function GameScreen(ctx) {
     });
   }
 
-  // iOS needs a user gesture to grant motion access — ask on the first tap-reveal,
-  // so every later card can be flipped by shaking or tilting.
-  let motionAsked = false;
-  async function ensureMotionPerm() {
-    if (motionAsked || !needsMotionPerm) return;
-    motionAsked = true;
-    try {
-      const perm = await DeviceMotionEvent.requestPermission();
-      if (perm === "granted") startMotion();
-    } catch (_) {}
+  // Start listening as soon as motion is permitted. On Android/desktop that's
+  // immediate; on iOS we await the grant primed by the "Igraj!" tap so shake
+  // and tilt work on the very first hidden card. Falls back to a tap: if the
+  // grant isn't there yet (e.g. a mid-game reload), tapping the card primes it
+  // for the following cards.
+  function ensureMotion() {
+    primeMotionPermission().then((granted) => {
+      if (granted && state.screen === "game") startMotion();
+    });
   }
-
-  // Android / desktop: no permission needed, start listening right away.
-  if (!needsMotionPerm) startMotion();
+  if (!motionNeedsPerm || _motionPromise) ensureMotion();
 
   const node = el(`
     <section class="screen">
@@ -499,7 +530,7 @@ export function GameScreen(ctx) {
         </div>
         ${canShake ? '<button class="cb-help" data-act="reveal-help">ℹ️ Kako razkriti?</button>' : ""}`;
       actions.innerHTML = '';
-      cardEl.onclick = () => { ensureMotionPerm(); doReveal(); };
+      cardEl.onclick = () => { ensureMotion(); doReveal(); };
       const helpBtn = cardEl.querySelector('[data-act="reveal-help"]');
       // stopPropagation so tapping the help chip doesn't also reveal the card
       if (helpBtn) helpBtn.onclick = (e) => { e.stopPropagation(); ctx.audio.pop(); ctx.showRevealHelp(); };
