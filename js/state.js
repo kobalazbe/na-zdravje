@@ -100,6 +100,9 @@ function freshState() {
     round: 1,
     deck: [],              // shuffled remaining cards
     current: null,         // the card on screen
+    revealed: false,       // is the current card face-up? starts hidden each draw
+                           // (tap / shake / tilt flips it) — persisted so reloads
+                           // and re-renders don't re-hide an already-revealed card
     cardsPlayed: 0,
     freeDraws: 0,          // free-tier draw counter (drives teaser cadence)
     repeated: false,       // free deck has cycled → show repetition nudge
@@ -154,6 +157,7 @@ export function resetRound() {
   state.round = 1;
   state.deck = [];
   state.current = null;
+  state.revealed = false;
   state.cardsPlayed = 0;
   state.freeDraws = 0;
   state.repeated = false;

@@ -358,11 +358,10 @@ export function GameScreen(ctx) {
 
   if (!state.current) ctx.drawCard();
 
-  let revealed = true;
-
   function doReveal() {
-    if (revealed) return;
-    revealed = true;
+    if (state.revealed) return;
+    state.revealed = true;
+    ctx.save();
     cardEl.onclick = null;
     requestAnimationFrame(() => renderCard(true));
   }
@@ -382,7 +381,7 @@ export function GameScreen(ctx) {
     typeof DeviceMotionEvent.requestPermission === "function";  // iOS 13+
 
   function flipByMotion() {
-    if (revealed || state.screen !== "game" || !state.shakeEnabled) return false;
+    if (state.revealed || state.screen !== "game" || !state.shakeEnabled) return false;
     ctx.audio.pop();
     doReveal();
     return true;
@@ -410,7 +409,7 @@ export function GameScreen(ctx) {
   function onTilt(e) {
     if (e.beta === null) return;
     if (e.beta > TILT_REARM) tiltArmed = true;
-    if (!tiltArmed || revealed) {
+    if (!tiltArmed || state.revealed) {
       if (tiltTimer) { clearTimeout(tiltTimer); tiltTimer = null; }
       return;
     }
@@ -489,7 +488,7 @@ export function GameScreen(ctx) {
     turnName.innerHTML = `${p.emoji} ${esc(p.name)}`;
     roundLabel.textContent = `${state.round}. krog`;
 
-    if (!revealed) {
+    if (!state.revealed) {
       cardEl.className = 'card card-back';
       cardEl.style.background = '';
       cardEl.innerHTML = `
@@ -683,8 +682,8 @@ export function GameScreen(ctx) {
       .map((r) => ({ ...r, turnsLeft: r.turnsLeft - 1 }))
       .filter((r) => r.turnsLeft >= 0);
     ctx.drawCard();
+    state.revealed = false;
     ctx.save();
-    revealed = false;
     renderCard(false);
   }
 
