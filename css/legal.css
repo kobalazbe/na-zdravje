@@ -1,0 +1,101 @@
+/* ===========================================================
+   legal.css — shared layout for privacy / terms / impressum pages.
+   Same brand tokens as landing.css, kept standalone (no dependency
+   on landing.css) since these are simple document pages.
+   =========================================================== */
+
+:root {
+  --coral:       #ff6b6b;
+  --ink:         #2b2140;
+  --ink-soft:    #5b5170;
+  --cream:       #fff8f0;
+  --white:       #ffffff;
+  --font-display:"Baloo 2", system-ui, sans-serif;
+  --font-body:   "Fredoka", system-ui, sans-serif;
+  --radius:      18px;
+  --radius-lg:   26px;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: linear-gradient(160deg, #fff3e0 0%, #ffe3ec 45%, #e3f2ff 100%);
+  background-attachment: fixed;
+  line-height: 1.6;
+}
+
+.legal-wrap {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: clamp(24px, 5vw, 56px) 20px 80px;
+}
+
+.legal-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: none;
+  background: var(--white);
+  border-radius: 999px;
+  padding: 8px 16px;
+  box-shadow: 0 4px 0 rgba(43,33,64,.14);
+  font-size: .9rem;
+}
+
+.legal-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 28px rgba(43,33,64,.12);
+  padding: clamp(22px, 5vw, 44px);
+  margin-top: 22px;
+}
+
+.legal-card h1 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(1.6rem, 4vw, 2.1rem);
+  margin: 0 0 6px;
+}
+
+.legal-updated {
+  color: var(--ink-soft);
+  font-size: .9rem;
+  margin-bottom: 24px;
+}
+
+.legal-card h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.2rem;
+  margin: 28px 0 10px;
+}
+
+.legal-card h2:first-of-type { margin-top: 8px; }
+
+.legal-card p { margin: 0 0 12px; font-size: .98rem; }
+.legal-card ul { margin: 0 0 12px; padding-left: 22px; }
+.legal-card li { margin-bottom: 6px; font-size: .98rem; }
+.legal-card a { color: var(--coral); font-weight: 600; }
+
+.legal-placeholder {
+  background: #fff3cd;
+  color: #8a6300;
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: .92em;
+}
+
+.legal-note {
+  margin-top: 28px;
+  padding: 14px 16px;
+  background: var(--cream);
+  border-radius: var(--radius);
+  font-size: .88rem;
+  color: var(--ink-soft);
+}

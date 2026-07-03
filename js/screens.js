@@ -6,7 +6,7 @@
    =========================================================== */
 
 import {
-  MODES, DIFFICULTIES, CARD_TYPES, PRICING,
+  MODES, DIFFICULTIES, CARD_TYPES, PRICING, SKIP_LIMIT_OPTIONS,
 } from "./state.js";
 import { SPICY } from "./data/cards.spicy.js";
 
@@ -65,11 +65,17 @@ export function HomeScreen(ctx) {
         <div style="margin-top:8px">${premiumBlock}</div>
       </div>
       <p class="hint" style="margin-top:18px">Pij odgovorno. Igra je namenjena odraslim. 🔞</p>
+      <p class="hint" style="margin-top:4px;font-size:.78rem">
+        <a href="terms.html" target="_blank" rel="noopener">Pogoji</a> ·
+        <a href="privacy.html" target="_blank" rel="noopener">Zasebnost</a> ·
+        <a href="impressum.html" target="_blank" rel="noopener">Impresum</a>
+      </p>
     </section>
   `);
 
   node.querySelector('[data-act="start"]').onclick = () => { ctx.audio.pop(); ctx.go("setup"); };
   node.querySelector('[data-act="how"]').onclick = () => { ctx.audio.pop(); ctx.showHowTo(); };
+
   const premBtn = node.querySelector('[data-act="premium"]');
   if (premBtn) premBtn.onclick = () => { ctx.audio.pop(); ctx.showPaywall("home"); };
   const logoutBtn = node.querySelector('[data-act="logout"]');
@@ -167,6 +173,7 @@ export function ModeScreen(ctx) {
   const { state } = ctx;
   if (!state.mode) state.mode = "classic";
   if (!state.difficulty) state.difficulty = "lahko";
+  if (!state.skipLimit) state.skipLimit = "unlimited";
 
   const node = el(`
     <section class="screen">
@@ -177,16 +184,15 @@ export function ModeScreen(ctx) {
 
       <div class="choice-grid" id="modeGrid"></div>
 
-      <p class="section-title" style="font-size:1.2rem;margin:22px 0 12px">Težavnost</p>
+      <p class="section-title" style="font-size:1.05rem;margin:12px 0 6px">Težavnost</p>
       <div class="diff-row" id="diffRow"></div>
 
-      <div class="toggle-row" style="margin-top:20px">
-        <span class="label">Vključi ukaze za pitje 🍺</span>
-        <label class="switch">
-          <input type="checkbox" id="drinkToggle" ${state.includeDrinks ? "checked" : ""}>
-          <span class="track"></span>
-        </label>
-      </div>
+      <p class="section-title" style="font-size:1.05rem;margin:12px 0 6px">Preskoki izzivov</p>
+      <div class="diff-row" id="skipRow"></div>
+
+      <button class="btn btn-ghost" data-act="card-types" style="margin-top:12px">
+        🃏 Vrste kartic <span id="cardTypeCount"></span>
+      </button>
 
       <div class="pushed-bottom stack" style="padding-top:20px">
         <button class="btn btn-lg" data-act="play" id="playBtn">Igraj! 🚀</button>
@@ -197,6 +203,7 @@ export function ModeScreen(ctx) {
 
   const modeGrid = node.querySelector("#modeGrid");
   const diffRow = node.querySelector("#diffRow");
+  const skipRow = node.querySelector("#skipRow");
 
   // a mode is premium-gated when it's the adult (Pikantno) pack and the user is free
   const isLocked = (m) => m.adult && !ctx.isPremium();
@@ -238,9 +245,27 @@ export function ModeScreen(ctx) {
       b.onclick = () => { ctx.audio.pop(); state.difficulty = b.dataset.diff; ctx.save(); renderDiffs(); };
     });
   }
+  function renderSkips() {
+    skipRow.innerHTML = Object.values(SKIP_LIMIT_OPTIONS).map((s) => `
+      <button class="diff ${state.skipLimit === s.id ? "selected" : ""}"
+              data-skip="${s.id}" style="background:${s.color};box-shadow:0 5px 0 ${s.colorDeep}">
+        <span class="ico">${s.ico}</span>${s.name}
+      </button>
+    `).join("");
+    skipRow.querySelectorAll("[data-skip]").forEach((b) => {
+      b.onclick = () => { ctx.audio.pop(); state.skipLimit = b.dataset.skip; ctx.save(); renderSkips(); };
+    });
+  }
 
-  node.querySelector("#drinkToggle").onchange = (e) => {
-    state.includeDrinks = e.target.checked; ctx.save();
+  function updateCardTypeCount() {
+    const n = Object.values(state.cardTypeFilters).filter(Boolean).length;
+    const el = node.querySelector("#cardTypeCount");
+    if (el) el.textContent = `(${n}/7 vključenih)`;
+  }
+  updateCardTypeCount();
+  node.querySelector('[data-act="card-types"]').onclick = () => {
+    ctx.audio.pop();
+    ctx.showCardTypeFilter(updateCardTypeCount);
   };
   node.querySelector('[data-act="back"]').onclick = () => { ctx.audio.pop(); ctx.go("setup"); };
 
@@ -255,7 +280,13 @@ export function ModeScreen(ctx) {
     }
   }
 
-  node.querySelector('[data-act="play"]').onclick = triggerPlay;
+  node.querySelector('[data-act="play"]').onclick = () => {
+    // Prime iOS motion permission while we still hold a user gesture, so the
+    // first (hidden) card in the game can be revealed by shaking/tilting and
+    // not only by tapping. Fire-and-forget; the game screen awaits this grant.
+    primeMotionPermission();
+    triggerPlay();
+  };
 
   // ---- tilt-to-start ----
   const tiltArea = node.querySelector("#tiltArea");
@@ -318,7 +349,36 @@ export function ModeScreen(ctx) {
 
   renderModes();
   renderDiffs();
+  renderSkips();
   return node;
+}
+
+/* ---- iOS motion permission (shared, origin-wide) ----
+   iOS 13+ gates devicemotion/deviceorientation behind a permission that can
+   only be requested from inside a user gesture. We prime it on the "Igraj!"
+   tap so the very first — now hidden — card can be revealed by shaking or
+   tilting, not only by tapping. Requesting DeviceMotionEvent permission also
+   unlocks deviceorientation (tilt) on iOS, so one prompt covers both.
+   Tracked at module scope because the grant is per-origin, and returned as a
+   single shared promise so the game screen can await the same pending grant
+   instead of re-prompting. */
+const motionNeedsPerm =
+  typeof DeviceMotionEvent !== "undefined" &&
+  typeof DeviceMotionEvent.requestPermission === "function";
+let _motionPromise = null;
+let _motionGranted = false;
+function primeMotionPermission() {
+  if (_motionPromise) return _motionPromise;
+  if (!motionNeedsPerm) {
+    _motionGranted = true;
+    _motionPromise = Promise.resolve(true);
+    return _motionPromise;
+  }
+  // must run synchronously inside the triggering user gesture on iOS
+  _motionPromise = DeviceMotionEvent.requestPermission()
+    .then((perm) => { _motionGranted = perm === "granted"; return _motionGranted; })
+    .catch(() => { _motionGranted = false; return false; });
+  return _motionPromise;
 }
 
 /* ===========================================================
@@ -332,11 +392,10 @@ export function GameScreen(ctx) {
 
   if (!state.current) ctx.drawCard();
 
-  let revealed = true;
-
   function doReveal() {
-    if (revealed) return;
-    revealed = true;
+    if (state.revealed) return;
+    state.revealed = true;
+    ctx.save();
     cardEl.onclick = null;
     requestAnimationFrame(() => renderCard(true));
   }
@@ -351,12 +410,9 @@ export function GameScreen(ctx) {
   const TILT_REARM = 45;               // beta above this = reading pos → re-arm tilt
   const TILT_HOLD = 350;               // ms the lean must be held to trigger
   const canShake = "ontouchstart" in window;  // only hint motion on touch devices
-  const needsMotionPerm =
-    typeof DeviceMotionEvent !== "undefined" &&
-    typeof DeviceMotionEvent.requestPermission === "function";  // iOS 13+
 
   function flipByMotion() {
-    if (revealed || state.screen !== "game" || !state.shakeEnabled) return false;
+    if (state.revealed || state.screen !== "game" || !state.shakeEnabled) return false;
     ctx.audio.pop();
     doReveal();
     return true;
@@ -384,7 +440,7 @@ export function GameScreen(ctx) {
   function onTilt(e) {
     if (e.beta === null) return;
     if (e.beta > TILT_REARM) tiltArmed = true;
-    if (!tiltArmed || revealed) {
+    if (!tiltArmed || state.revealed) {
       if (tiltTimer) { clearTimeout(tiltTimer); tiltTimer = null; }
       return;
     }
@@ -399,7 +455,10 @@ export function GameScreen(ctx) {
     }
   }
 
+  let motionStarted = false;
   function startMotion() {
+    if (motionStarted) return;              // guard against double-attaching listeners
+    motionStarted = true;
     window.addEventListener("devicemotion", onMotion);
     window.addEventListener("deviceorientation", onTilt);
     ctx.setTiltCleanup(() => {
@@ -409,20 +468,17 @@ export function GameScreen(ctx) {
     });
   }
 
-  // iOS needs a user gesture to grant motion access — ask on the first tap-reveal,
-  // so every later card can be flipped by shaking or tilting.
-  let motionAsked = false;
-  async function ensureMotionPerm() {
-    if (motionAsked || !needsMotionPerm) return;
-    motionAsked = true;
-    try {
-      const perm = await DeviceMotionEvent.requestPermission();
-      if (perm === "granted") startMotion();
-    } catch (_) {}
+  // Start listening as soon as motion is permitted. On Android/desktop that's
+  // immediate; on iOS we await the grant primed by the "Igraj!" tap so shake
+  // and tilt work on the very first hidden card. Falls back to a tap: if the
+  // grant isn't there yet (e.g. a mid-game reload), tapping the card primes it
+  // for the following cards.
+  function ensureMotion() {
+    primeMotionPermission().then((granted) => {
+      if (granted && state.screen === "game") startMotion();
+    });
   }
-
-  // Android / desktop: no permission needed, start listening right away.
-  if (!needsMotionPerm) startMotion();
+  if (!motionNeedsPerm || _motionPromise) ensureMotion();
 
   const node = el(`
     <section class="screen">
@@ -434,6 +490,8 @@ export function GameScreen(ctx) {
         </div>
         <span class="round" id="roundLabel"></span>
       </div>
+
+      <div class="rules-banner" id="rulesBanner"></div>
 
       <div class="card-area">
         <div class="card" id="card"></div>
@@ -452,6 +510,7 @@ export function GameScreen(ctx) {
   const roundLabel = node.querySelector("#roundLabel");
   const scoreboard = node.querySelector("#scoreboard");
   const nudge = node.querySelector("#nudge");
+  const rulesBanner = node.querySelector("#rulesBanner");
 
   function renderCard(flipAnim) {
     const c = state.current;
@@ -460,7 +519,7 @@ export function GameScreen(ctx) {
     turnName.innerHTML = `${p.emoji} ${esc(p.name)}`;
     roundLabel.textContent = `${state.round}. krog`;
 
-    if (!revealed) {
+    if (!state.revealed) {
       cardEl.className = 'card card-back';
       cardEl.style.background = '';
       cardEl.innerHTML = `
@@ -468,10 +527,15 @@ export function GameScreen(ctx) {
         <div class="cb-body">
           <div class="cb-hint">👆 Tapni kartico za razkritje</div>
           ${canShake ? '<div class="cb-hint cb-hint-shake">📳 stresi ali nagni telefon</div>' : ""}
-        </div>`;
+        </div>
+        ${canShake ? '<button class="cb-help" data-act="reveal-help">ℹ️ Kako razkriti?</button>' : ""}`;
       actions.innerHTML = '';
-      cardEl.onclick = () => { ensureMotionPerm(); doReveal(); };
+      cardEl.onclick = () => { ensureMotion(); doReveal(); };
+      const helpBtn = cardEl.querySelector('[data-act="reveal-help"]');
+      // stopPropagation so tapping the help chip doesn't also reveal the card
+      if (helpBtn) helpBtn.onclick = (e) => { e.stopPropagation(); ctx.audio.pop(); ctx.showRevealHelp(); };
       renderScores();
+      renderRules();
       return;
     }
 
@@ -503,7 +567,18 @@ export function GameScreen(ctx) {
     }
     renderActions(c);
     renderScores();
+    renderRules();
     renderNudge();
+  }
+
+  // persistent "pravilo" cards: just render whatever's still active.
+  // Expiry itself happens once per turn in advance() (turn-count based, not
+  // round-number based) so a rule lasts exactly one lap regardless of which
+  // player's turn it was drawn on.
+  function renderRules() {
+    rulesBanner.innerHTML = (state.activeRules || [])
+      .map((r) => `<span class="rule-chip">⚡ ${esc(r.text)}</span>`)
+      .join("");
   }
 
   // repetition nudge: free deck has cycled → seen-it-already conversion prompt
@@ -540,15 +615,24 @@ export function GameScreen(ctx) {
     }
     if (c.type === "izziv") {
       const pen = c.sips || 2;
+      // an independent setting caps how many challenges a player may skip per game
+      const limit = SKIP_LIMIT_OPTIONS[state.skipLimit]?.value ?? Infinity;
+      const left = limit - p.skips;                     // Infinity - n = Infinity
+      const canSkip = left > 0;
+      const leftHint = Number.isFinite(limit) ? ` (še ${Math.max(0, left)})` : "";
       actions.innerHTML = `
         <div class="btn-row">
           <button class="btn" data-act="done">Opravljeno ✓</button>
-          <button class="btn btn-ghost" data-act="skip">Preskoči 🍺 ${pen}</button>
+          ${canSkip
+            ? `<button class="btn btn-ghost" data-act="skip">Preskoči 🍺 ${pen}${leftHint}</button>`
+            : `<span class="skip-locked">🚫 Ni več preskokov — moraš!</span>`}
         </div>`;
       actions.querySelector('[data-act="done"]').onclick = () => { ctx.audio.success(); p.done++; advance(); };
-      actions.querySelector('[data-act="skip"]').onclick = () => {
-        ctx.audio.drink(); p.sips += pen; p.skips++; ctx.bumpScore(); advance();
-      };
+      if (canSkip) {
+        actions.querySelector('[data-act="skip"]').onclick = () => {
+          ctx.audio.drink(); p.sips += pen; p.skips++; ctx.bumpScore(); advance();
+        };
+      }
     } else if (c.type === "pijaca") {
       const n = c.sips || 1;
       actions.innerHTML = `<button class="btn" data-act="drank">Na ex! 🍺 (${n})</button>`;
@@ -556,8 +640,19 @@ export function GameScreen(ctx) {
         spawnDrinkFloat(e.currentTarget, n);
         ctx.audio.drink(); p.sips += n; ctx.bumpScore(); advance();
       };
+    } else if (c.type === "pravilo") {
+      // register a temporary rule, then advance; renderRules() keeps it on screen.
+      // Every pravilo lasts exactly one lap: turnsLeft = one turn per player,
+      // counted down in advance() — so it always covers exactly one full
+      // go-around of the table, no matter whose turn it was drawn on.
+      actions.innerHTML = `<button class="btn" data-act="rule">Pravilo aktivno! ⚡</button>`;
+      actions.querySelector('[data-act="rule"]').onclick = () => {
+        ctx.audio.pop();
+        state.activeRules.push({ text: c.text, turnsLeft: state.players.length });
+        p.done++; advance();
+      };
     } else {
-      // vprasanje / skupinski → single continue
+      // vprasanje / skupinski / glasovanje / dogodek → single continue
       actions.innerHTML = `<button class="btn" data-act="next">Naprej →</button>`;
       actions.querySelector('[data-act="next"]').onclick = () => { ctx.audio.success(); p.done++; advance(); };
     }
@@ -611,9 +706,15 @@ export function GameScreen(ctx) {
 
   function advance() {
     ctx.nextTurn();
+    // one tick per turn: a rule is visible for exactly `players.length` turns
+    // (one per player) from the moment it's activated, however far into the
+    // current round that was — always exactly one full lap of the table.
+    state.activeRules = (state.activeRules || [])
+      .map((r) => ({ ...r, turnsLeft: r.turnsLeft - 1 }))
+      .filter((r) => r.turnsLeft >= 0);
     ctx.drawCard();
+    state.revealed = false;
     ctx.save();
-    revealed = false;
     renderCard(false);
   }
 
@@ -689,6 +790,9 @@ export function SummaryScreen(ctx) {
 
   node.querySelector('[data-act="again"]').onclick = () => { ctx.audio.pop(); ctx.playAgain(); };
   node.querySelector('[data-act="home"]').onclick = () => { ctx.audio.pop(); ctx.goHomeReset(); };
+
+
+
   const upsell = node.querySelector('[data-act="upsell"]');
   if (upsell) upsell.onclick = () => { ctx.audio.pop(); ctx.showPaywall("summary"); };
 
@@ -699,6 +803,43 @@ export function SummaryScreen(ctx) {
 /* ===========================================================
    MODALS
    =========================================================== */
+/* One-time gate shown before the very first screen of the app is used.
+   Na Zdravje! is fundamentally an alcohol-drinking game — Klasično mode
+   already has "pijaca"/sip mechanics — so the age + responsible-use notice
+   belongs in front of the whole app, not just the Pikantno mode. */
+export function AgeGateModal(ctx) {
+  const node = el(`
+    <div class="modal-backdrop">
+      <div class="modal">
+        <div class="big-emoji">🔞</div>
+        <h2>Preden začneš</h2>
+        <p><b>Na Zdravje!</b> je igra, povezana z uživanjem alkohola, in je namenjena
+        izključno osebam, starim <b>18 let ali več</b>. Igraj in pij odgovorno.</p>
+        <p class="hint">S potrditvijo se strinjaš tudi s <a href="terms.html" target="_blank" rel="noopener">pogoji uporabe</a>
+        in <a href="privacy.html" target="_blank" rel="noopener">politiko zasebnosti</a>.</p>
+        <div class="stack">
+          <button class="btn" data-act="yes">Sem polnoleten/a 🍻</button>
+          <button class="btn btn-ghost" data-act="no">Nisem</button>
+        </div>
+      </div>
+    </div>
+  `);
+  node.querySelector('[data-act="yes"]').onclick = () => {
+    ctx.audio.pop();
+    ctx.state.ageAcknowledged = true;
+    ctx.save();
+    ctx.closeModal();
+  };
+  node.querySelector('[data-act="no"]').onclick = () => {
+    node.querySelector(".modal").innerHTML = `
+      <div class="big-emoji">🙅</div>
+      <h2>Žal nam je</h2>
+      <p>Igra ni namenjena mladoletnim osebam. Vrni se, ko dopolniš 18 let.</p>
+    `;
+  };
+  return node;
+}
+
 export function AdultGateModal(ctx) {
   const node = el(`
     <div class="modal-backdrop">
@@ -735,6 +876,7 @@ export function GameSettingsModal(ctx) {
           ${shakeOn ? "Vključeno" : "Izključeno"}
         </button>
       </div>
+      <button class="btn btn-ghost" data-act="reveal-help" style="margin-top:10px">ℹ️ Kako razkriti karto?</button>
       <div class="stack" style="margin-top:18px">
         <button class="btn btn-danger" data-act="end">Končaj igro ⏹</button>
         <button class="btn btn-ghost" data-act="cancel">Nadaljuj igro</button>
@@ -746,8 +888,60 @@ export function GameSettingsModal(ctx) {
       ctx.save();
       render();
     };
+    node.querySelector('[data-act="reveal-help"]').onclick = () => { ctx.audio.pop(); ctx.showRevealHelp(); };
     node.querySelector('[data-act="end"]').onclick = () => { ctx.audio.pop(); ctx.closeModal(); ctx.go("summary"); };
     node.querySelector('[data-act="cancel"]').onclick = () => { ctx.audio.pop(); ctx.closeModal(); };
+  }
+
+  const node = el(`<div class="modal-backdrop"><div class="modal"></div></div>`);
+  render();
+  return node;
+}
+
+/* which of the 7 card types get dealt into the deck this game — reused for
+   every difficulty/mode until changed. `onClose` (optional) lets the caller
+   refresh a summary label after the modal closes. */
+export function CardTypeModal(ctx, onClose) {
+  const { state } = ctx;
+
+  function render() {
+    const rows = Object.entries(CARD_TYPES).map(([key, t]) => {
+      const on = state.cardTypeFilters[key] !== false;
+      return `
+        <div class="settings-row">
+          <span>${t.emoji} ${t.label}</span>
+          <button class="toggle-btn ${on ? "on" : ""}" data-type="${key}">
+            ${on ? "Vključeno" : "Izključeno"}
+          </button>
+        </div>`;
+    }).join("");
+    node.querySelector('.modal').innerHTML = `
+      <div class="big-emoji">🃏</div>
+      <h2>Vrste kartic</h2>
+      <p>Izberi, katere vrste kartic se pojavljajo v igri.</p>
+      ${rows}
+      <p class="hint" style="margin-top:10px">Vsaj ena vrsta mora ostati vključena.</p>
+      <div class="stack" style="margin-top:14px">
+        <button class="btn" data-act="close">Shrani ✓</button>
+      </div>
+    `;
+    node.querySelectorAll("[data-type]").forEach((b) => {
+      b.onclick = () => {
+        const key = b.dataset.type;
+        const activeCount = Object.values(state.cardTypeFilters).filter(Boolean).length;
+        const isOn = state.cardTypeFilters[key] !== false;
+        if (isOn && activeCount <= 1) return; // never allow zero types selected
+        ctx.audio.pop();
+        state.cardTypeFilters[key] = !isOn;
+        ctx.save();
+        render();
+      };
+    });
+    node.querySelector('[data-act="close"]').onclick = () => {
+      ctx.audio.pop();
+      ctx.closeModal();
+      if (onClose) onClose();
+    };
   }
 
   const node = el(`<div class="modal-backdrop"><div class="modal"></div></div>`);
@@ -783,8 +977,39 @@ export function HowToModal(ctx) {
         <p style="text-align:left">1️⃣ Vnesi imena igralcev (2–10).</p>
         <p style="text-align:left">2️⃣ Izberi način in težavnost.</p>
         <p style="text-align:left">3️⃣ Telefon kroži med igralci. Vsak dobi karto:</p>
-        <p style="text-align:left;margin-left:10px">💬 vprašanje • 🎯 izziv • 👥 skupinski • 🍺 pij</p>
-        <p style="text-align:left">4️⃣ Izziv lahko <b>preskočiš</b> — a piješ kazenske požirke!</p>
+        <p style="text-align:left;margin-left:10px">💬 vprašanje • 🎯 izziv • 👥 skupinski • 🍺 pij<br>🗳️ glasovanje • ⚡ pravilo • 🎲 dogodek</p>
+        <p style="text-align:left;margin-left:10px">👆 Karto razkriješ s <b>tapom</b>, <b>stresanjem</b> ali <b>nagibom</b> telefona.</p>
+        <p style="text-align:left;margin-left:10px">🃏 Vrste kartic si lahko prilagodiš na zaslonu za izbiro načina.</p>
+        <p style="text-align:left">4️⃣ Izziv lahko <b>preskočiš</b> — a piješ kazenske požirke! Koliko preskokov imaš na voljo za celo igro, izbereš posebej ob težavnosti (Neomejeno / 3x / 1x).</p>
+        <p style="text-align:left">5️⃣ <b>⚡ Pravilo</b> velja za vse do konca tega kroga — ostane prikazano na vrhu zaslona, dokler ne poteče.</p>
+        <p style="text-align:left">6️⃣ <b>🗳️ Glasovanje</b> in <b>🎲 dogodek</b> odloči cela miza — brez pravega odgovora, samo zabava!</p>
+        <div class="stack" style="margin-top:14px">
+          <button class="btn" data-act="ok">Razumem! 👍</button>
+        </div>
+      </div>
+    </div>
+  `);
+  node.querySelector('[data-act="ok"]').onclick = () => { ctx.audio.pop(); ctx.closeModal(); };
+  return node;
+}
+
+export function RevealHelpModal(ctx) {
+  const node = el(`
+    <div class="modal-backdrop">
+      <div class="modal" style="text-align:left">
+        <div class="big-emoji" style="text-align:center">🃏</div>
+        <h2 style="text-align:center">Kako razkriti karto</h2>
+        <p style="text-align:left">Karto obrneš na tri načine:</p>
+        <p style="text-align:left;margin-left:6px">👆 <b>Tapni</b> kartico na sredini zaslona.</p>
+        <p style="text-align:left;margin-left:6px">📳 <b>Stresi</b> telefon z eno hitro kretnjo.</p>
+        <p style="text-align:left;margin-left:6px">📲 <b>Nagni</b> telefon naprej (kot da piješ) in za hip pridrži.</p>
+        <div class="help-tip">
+          <b>📱 iPhone nasvet</b><br>
+          Če stresanje ne deluje, iOS prestreza kretnjo. Izklopi jo v:<br>
+          <b>Nastavitve → Dostopnost → Dotik → Stresi za razveljavitev</b><br>
+          Ali pa preprosto uporabi <b>nagib</b> ali <b>tap</b> — vedno delujeta. 😉
+        </div>
+        <p class="hint" style="text-align:left;margin-top:12px">Stresanje/nagib lahko izklopiš v ⚙️ nastavitvah.</p>
         <div class="stack" style="margin-top:14px">
           <button class="btn" data-act="ok">Razumem! 👍</button>
         </div>
@@ -818,7 +1043,7 @@ export function PaywallModal(ctx, source = "generic", onDismiss) {
       <div class="modal paywall">
         <div class="big-emoji">👑</div>
         <h2>Odkleni vse</h2>
-        <p>Pikantno 18+, vse težavnosti in 100+ kart. En nakup za vso družbo.</p>
+        <p class="paywall-desc">Pikantno 18+, vse težavnosti in 100+ kart. En nakup za vso družbo.</p>
 
         <div class="peek">
           <span class="peek-tag">🔒 Pikantno</span>
@@ -827,7 +1052,7 @@ export function PaywallModal(ctx, source = "generic", onDismiss) {
 
         <div class="tier-list">${tiers}</div>
 
-        <button class="btn" data-act="verify" style="display:none">✓ Plačal sem — preveri dostop</button>
+        <button class="btn" data-act="verify">✓ Plačal sem — preveri dostop</button>
 
         <div class="redeem">
           <input class="text-input" id="redeemInput" placeholder="Imaš kodo? Vnesi jo…" autocomplete="off" />
@@ -836,7 +1061,7 @@ export function PaywallModal(ctx, source = "generic", onDismiss) {
         <p class="redeem-msg hint" id="redeemMsg"></p>
 
         <button class="btn btn-ghost" data-act="close">Mogoče kasneje</button>
-        <p class="hint" style="margin-top:8px">🎟️ Žur Pass odklene vse za 48 ur.</p>
+        <p class="hint" style="margin-top:2px;font-size:.78rem">🎟️ Žur Pass odklene vse za 48 ur.</p>
       </div>
     </div>
   `);
@@ -852,14 +1077,7 @@ export function PaywallModal(ctx, source = "generic", onDismiss) {
       // A guest has no account to attach the purchase to — pop up a prompt to
       // register / log in. Their game is kept either way.
       if (isGuest) { ctx.promptGuestRegister(); return; }
-      const opened = ctx.startCheckout(b.dataset.tier);
-      if (!opened) {
-        msg.textContent = "Plačilo pride kmalu. Imaš kodo? Vnesi jo spodaj. 👇";
-      } else {
-        // startCheckout navigates away; if for some reason we're still here, show verify
-        verifyBtn.style.display = "";
-        msg.textContent = "Odpira Stripe... Ko zaključiš, se vrni in klikni gumb zgoraj.";
-      }
+      ctx.showCheckoutConsent(b.dataset.tier);
     };
   });
 
@@ -897,6 +1115,57 @@ export function PaywallModal(ctx, source = "generic", onDismiss) {
   return node;
 }
 
+/* Shown right before Stripe checkout — captures the explicit consent required
+   to waive the EU/Slovenian 14-day right of withdrawal for digital content
+   delivered immediately (ZVPot-1). Without this checked confirmation, a
+   customer could legally demand a refund on any digital purchase within 14
+   days regardless of usage. */
+export function CheckoutConsentModal(ctx, tier) {
+  const plan = PRICING.find((p) => p.id === tier);
+  const node = el(`
+    <div class="modal-backdrop">
+      <div class="modal">
+        <div class="big-emoji">${plan?.emoji || "🔒"}</div>
+        <h2>Potrditev nakupa</h2>
+        <p><b>${esc(plan?.name || "Premium")}</b> — ${esc(plan?.price || "")} ${esc(plan?.sub || "")}</p>
+        <label class="auth-consent" style="text-align:left;margin-top:10px">
+          <input type="checkbox" id="checkout-consent-chk" />
+          <span>Strinjam se s <a href="terms.html" target="_blank" rel="noopener">pogoji uporabe</a>
+          in <a href="privacy.html" target="_blank" rel="noopener">politiko zasebnosti</a>. Izrecno
+          zahtevam, da se z izvajanjem storitve začne takoj, in razumem, da s tem izgubim
+          14-dnevno pravico do odstopa od pogodbe za digitalno vsebino.</span>
+        </label>
+        <p class="hint" id="checkout-consent-msg" style="min-height:18px"></p>
+        <div class="stack" style="margin-top:10px">
+          <button class="btn" data-act="confirm" disabled>Nadaljuj na plačilo →</button>
+          <button class="btn btn-ghost" data-act="cancel">Prekliči</button>
+        </div>
+      </div>
+    </div>
+  `);
+
+  const chk = node.querySelector("#checkout-consent-chk");
+  const confirmBtn = node.querySelector('[data-act="confirm"]');
+  const msg = node.querySelector("#checkout-consent-msg");
+
+  chk.addEventListener("change", () => { confirmBtn.disabled = !chk.checked; });
+
+  confirmBtn.onclick = () => {
+    ctx.audio.pop();
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = "Preusmerjam na Stripe...";
+    const opened = ctx.startCheckout(tier);
+    if (!opened) {
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = "Nadaljuj na plačilo →";
+      msg.textContent = "Plačilo za ta paket še ni na voljo.";
+    }
+  };
+  node.querySelector('[data-act="cancel"]').onclick = () => { ctx.audio.pop(); ctx.closeModal(); };
+
+  return node;
+}
+
 /* ===========================================================
    LOGIN / SIGNUP / FORGOT / RESET
    =========================================================== */
@@ -922,6 +1191,11 @@ export function LoginScreen(ctx, initialMode = "login") {
           <input class="input" id="auth-name" type="text" placeholder="Tvoje ime" autocomplete="name" maxlength="24" style="display:none" />
           <input class="input" id="auth-email" type="email" placeholder="E-pošta" autocomplete="email" inputmode="email" />
           <input class="input" id="auth-pass" type="password" placeholder="Geslo (min. 6 znakov)" autocomplete="current-password" />
+          <label class="auth-consent" id="auth-consent" style="display:none">
+            <input type="checkbox" id="auth-consent-chk" />
+            <span>Strinjam se s <a href="terms.html" target="_blank" rel="noopener">pogoji uporabe</a>
+            in <a href="privacy.html" target="_blank" rel="noopener">politiko zasebnosti</a>.</span>
+          </label>
           <button class="btn btn-lg" id="auth-submit">Prijava</button>
           <p id="auth-err" class="hint" style="text-align:center;min-height:18px;font-weight:600"></p>
           <button class="btn btn-ghost" id="auth-toggle">Nimaš računa? Registracija →</button>
@@ -930,6 +1204,10 @@ export function LoginScreen(ctx, initialMode = "login") {
       </div>
       <button class="btn-guest" id="auth-guest">🎲 Igraj kot gost</button>
       <div class="grow"></div>
+      <p class="hint" style="text-align:center">
+        Z nadaljevanjem se strinjaš s <a href="terms.html" target="_blank" rel="noopener">pogoji uporabe</a>
+        in <a href="privacy.html" target="_blank" rel="noopener">politiko zasebnosti</a>.
+      </p>
       <p class="hint" style="text-align:center">Pij odgovorno. Igra je namenjena odraslim. 🔞</p>
     </section>
   `);
@@ -945,6 +1223,8 @@ export function LoginScreen(ctx, initialMode = "login") {
   const googleEl  = node.querySelector("#auth-google");
   const dividerEl = node.querySelector("#auth-divider");
   const guestEl   = node.querySelector("#auth-guest");
+  const consentEl = node.querySelector("#auth-consent");
+  const consentChk = node.querySelector("#auth-consent-chk");
 
   function setMode(m) {
     mode = m;
@@ -964,6 +1244,11 @@ export function LoginScreen(ctx, initialMode = "login") {
     googleEl.style.display  = showGoogle ? "" : "none";
     dividerEl.style.display = showGoogle ? "" : "none";
     guestEl.style.display   = showGoogle ? "" : "none";
+    // Explicit ToS/Privacy agreement is only asked for at account creation —
+    // a returning user already agreed once, and Google-in-login-mode is
+    // covered by the static disclosure line under the card.
+    consentEl.style.display = (m === "signup") ? "" : "none";
+    if (m !== "signup") consentChk.checked = false;
 
     if (m === "login") {
       titleEl.textContent  = "Prijava";
@@ -996,6 +1281,10 @@ export function LoginScreen(ctx, initialMode = "login") {
   guestEl.onclick = () => { ctx.audio.pop(); ctx.continueAsGuest(); };
 
   googleEl.onclick = async () => {
+    if (mode === "signup" && !consentChk.checked) {
+      errEl.textContent = "Najprej potrdi strinjanje s pogoji uporabe in politiko zasebnosti.";
+      return;
+    }
     errEl.textContent = "";
     googleEl.disabled = true;
     googleEl.classList.add("is-loading");
@@ -1009,6 +1298,10 @@ export function LoginScreen(ctx, initialMode = "login") {
   };
 
   submitEl.onclick = async () => {
+    if (mode === "signup" && !consentChk.checked) {
+      errEl.textContent = "Najprej potrdi strinjanje s pogoji uporabe in politiko zasebnosti.";
+      return;
+    }
     const email = emailEl.value.trim();
     const pass  = passEl.value;
     errEl.textContent = "";

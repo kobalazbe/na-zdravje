@@ -13,7 +13,8 @@ import * as entitlement from "./entitlement.js";
 import { track } from "./analytics.js";
 import {
   HomeScreen, SetupScreen, ModeScreen, GameScreen, SummaryScreen,
-  AdultGateModal, QuitModal, GameSettingsModal, HowToModal, PaywallModal, LoginScreen,
+  AdultGateModal, QuitModal, GameSettingsModal, HowToModal, RevealHelpModal, CardTypeModal, PaywallModal,
+  CheckoutConsentModal, AgeGateModal, LoginScreen,
   CustomCardsScreen,
 } from "./screens.js";
 import {
@@ -101,7 +102,8 @@ const ctx = {
     } else {
       state.customCards = [];
     }
-    state.deck = buildDeck(state.mode, state.difficulty, state.includeDrinks);
+    state.pool = buildDeck(state.mode, state.difficulty, state.cardTypeFilters);
+    state.deck = state.pool.slice();
     state.current = null;
     drawCard(state);
     closeModal();
@@ -109,7 +111,8 @@ const ctx = {
   },
   playAgain() {
     resetRound();
-    state.deck = buildDeck(state.mode, state.difficulty, state.includeDrinks);
+    state.pool = buildDeck(state.mode, state.difficulty, state.cardTypeFilters);
+    state.deck = state.pool.slice();
     state.current = null;
     drawCard(state);
     this.go("game");
@@ -191,6 +194,10 @@ const ctx = {
     openModal((c) => PaywallModal(c, source, onDismiss));
   },
 
+  showCheckoutConsent(tier) {
+    openModal((c) => CheckoutConsentModal(c, tier));
+  },
+
   startCheckout(tier) {
     track("checkout_start", { tier });
     const plan = PRICING.find((p) => p.id === tier);
@@ -245,6 +252,8 @@ const ctx = {
   confirmQuit() { openModal(QuitModal); },
   openGameSettings() { openModal(GameSettingsModal); },
   showHowTo() { openModal(HowToModal); },
+  showRevealHelp() { openModal(RevealHelpModal); },
+  showCardTypeFilter(onClose) { openModal((c) => CardTypeModal(c, onClose)); },
   closeModal,
 };
 
@@ -254,6 +263,8 @@ function render() {
   root.innerHTML = "";
   root.appendChild(builder(ctx));
   window.scrollTo(0, 0);
+  // One-time age/responsible-drinking gate in front of any actual game screen.
+  if (!state.ageAcknowledged && !modalNode) openModal(AgeGateModal);
 }
 
 function showLogin(mode) {
@@ -268,7 +279,7 @@ function openModal(builder) {
   modalNode = builder(ctx);
   document.body.appendChild(modalNode);
   modalNode.addEventListener("click", (e) => {
-    if (e.target === modalNode && builder !== AdultGateModal) closeModal();
+    if (e.target === modalNode && builder !== AdultGateModal && builder !== AgeGateModal) closeModal();
   });
 }
 

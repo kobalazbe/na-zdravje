@@ -507,24 +507,24 @@ body {
 
 /* card types visual (feat 2 left) */
 .card-types-visual {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
   width: 100%;
-  max-width: 360px;
+  max-width: 420px;
 }
 .ct-chip {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   border-radius: var(--radius);
-  padding: 16px 20px;
+  padding: 12px 14px;
   color: white;
   box-shadow: var(--shadow);
 }
-.ct-chip > span { font-size: 1.6rem; flex-shrink: 0; }
-.ct-chip strong { font-family: var(--font-display); font-weight: 800; font-size: 1rem; display: block; }
-.ct-chip p { font-size: .85rem; opacity: .88; margin-top: 2px; }
+.ct-chip > span { font-size: 1.3rem; flex-shrink: 0; }
+.ct-chip strong { font-family: var(--font-display); font-weight: 800; font-size: .88rem; display: block; }
+.ct-chip p { font-size: .74rem; opacity: .88; margin-top: 2px; }
 
 /* ===========================================================
    5. DARK BANNER
@@ -844,8 +844,8 @@ body {
   max-width: 1060px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1.5fr;
-  gap: 40px;
+  grid-template-columns: 1.8fr 1fr 1fr 1fr 1.3fr;
+  gap: 32px;
   padding-bottom: 40px;
   border-bottom: 1px solid rgba(255,255,255,.1);
   margin-bottom: 28px;
@@ -1114,6 +1114,7 @@ body {
   .stat-divider { height: 28px; }
 
   .dark-features { grid-template-columns: 1fr; }
+  .card-types-visual { grid-template-columns: 1fr; }
 
   .features-grid { grid-template-columns: 1fr; }
 
@@ -1121,4 +1122,24 @@ body {
   .footer-bottom { flex-direction: column; text-align: center; }
 
   .cta-inner { gap: 32px; }
+}
+
+/* ---- Landing leaderboard ---- */
+.landing-lb {
+  background: rgba(255,255,255,.06); border-radius: 18px;
+  padding: 8px 4px; margin-top: 24px;
+}
+.landing-lb-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,.07);
+  font-family: 'Fredoka', sans-serif; font-size: 1rem; font-weight: 600;
+}
+.landing-lb-row:last-child { border-bottom: none; }
+.landing-lb-rank { width: 32px; text-align: center; font-size: 1.1rem; }
+.landing-lb-emoji { font-size: 1.2rem; }
+.landing-lb-name { flex: 1; color: rgba(255,255,255,.9); }
+.landing-lb-sips { color: rgba(255,255,255,.55); font-size: .9rem; }
+.landing-lb-loading, .landing-lb-empty {
+  text-align: center; color: rgba(255,255,255,.4);
+  font-family: 'Fredoka', sans-serif; font-size: .9rem; padding: 14px;
 }

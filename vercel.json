@@ -1,0 +1,7 @@
+{
+  "routes": [
+    { "src": "^/landing\\.html$", "status": 308, "headers": { "Location": "/" } },
+    { "src": "^/$", "dest": "/landing.html" },
+    { "handle": "filesystem" }
+  ]
+}
