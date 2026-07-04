@@ -213,10 +213,12 @@ export function ModeScreen(ctx) {
       const locked = isLocked(m);
       return `
       <button class="choice ${state.mode === m.id ? "selected" : ""} ${locked ? "locked" : ""}"
-              data-mode="${m.id}" style="background:${m.color}">
-        <span class="emoji">${locked ? "🔒" : m.emoji}</span>
-        <h3>${m.name}</h3>
-        <p>${m.blurb}</p>
+              data-mode="${m.id}" style="--mode-color:${m.color};--mode-deep:${m.colorDeep}">
+        <span class="choice-icon">${locked ? "🔒" : m.emoji}</span>
+        <span class="choice-body">
+          <h3>${m.name}</h3>
+          <p>${m.blurb}</p>
+        </span>
         ${locked ? '<span class="badge18">🔒 Premium</span>'
                  : (m.adult ? '<span class="badge18">18+</span>' : "")}
       </button>`;
