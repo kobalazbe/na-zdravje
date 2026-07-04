@@ -29,7 +29,7 @@ function avatar(p, cls = "") {
    HOME
    =========================================================== */
 export function HomeScreen(ctx) {
-  ctx.setTheme("#ff6b6b", "#e84b4b");
+  ctx.setTheme("#FFD100", "#c9a600");
   const premium = ctx.isPremium();
   const hrs = ctx.passHoursLeft();
   const isGuest = ctx.isGuest && !ctx.currentUser;
@@ -54,7 +54,7 @@ export function HomeScreen(ctx) {
       </div>` : ""}
       <div class="grow"></div>
       <div class="stack" style="align-items:center;gap:6px">
-        <div class="logo">NA ZDRAVJE!<span class="cheer">🍻 pivska igra 🍻</span></div>
+        <img class="brand-logo" src="img/logo.png" alt="Na Zdravje" />
         <p class="subtitle">Ena naprava • 2–10 igralcev<br>Vrtite telefon in se zabavajte.</p>
       </div>
       <div class="grow"></div>
@@ -98,7 +98,7 @@ export function HomeScreen(ctx) {
    SETUP — players
    =========================================================== */
 export function SetupScreen(ctx) {
-  ctx.setTheme("#845ef7", "#6741d9");
+  ctx.setTheme("#8A2BE2", "#6a1fb0");
   const { state } = ctx;
 
   const node = el(`
@@ -169,7 +169,7 @@ export function SetupScreen(ctx) {
    MODE + DIFFICULTY select
    =========================================================== */
 export function ModeScreen(ctx) {
-  ctx.setTheme("#4dabf7", "#1f8de0");
+  ctx.setTheme("#00B8FF", "#0090cc");
   const { state } = ctx;
   if (!state.mode) state.mode = "classic";
   if (!state.difficulty) state.difficulty = "lahko";
@@ -738,7 +738,7 @@ function sipWord(n) {
    SUMMARY
    =========================================================== */
 export function SummaryScreen(ctx) {
-  ctx.setTheme("#ffd43b", "#f0b400");
+  ctx.setTheme("#FFD100", "#c9a600");
   const { state } = ctx;
   const ranked = state.players.slice().sort((a, b) => b.sips - a.sips);
   const topSips = ranked[0]?.sips || 0;
@@ -1170,14 +1170,14 @@ export function CheckoutConsentModal(ctx, tier) {
    LOGIN / SIGNUP / FORGOT / RESET
    =========================================================== */
 export function LoginScreen(ctx, initialMode = "login") {
-  ctx.setTheme("#ff6b6b", "#e84b4b");
+  ctx.setTheme("#FFD100", "#c9a600");
   let mode = initialMode;
 
   const node = el(`
     <section class="screen center-col">
       <div class="grow"></div>
       <div class="stack" style="align-items:center;gap:4px">
-        <div class="logo">Na Zdravje!<span class="cheer">🍻</span></div>
+        <img class="brand-logo" src="img/logo.png" alt="Na Zdravje" />
         <p class="subtitle" style="text-align:center">Prijavi se in začni igrati.</p>
       </div>
       <div class="auth-card">
@@ -1407,7 +1407,7 @@ function _authErr(msg) {
    Cards are scoped to the currently selected mode + difficulty.
    =========================================================== */
 export function CustomCardsScreen(ctx) {
-  ctx.setTheme("#ff6b6b", "#e84b4b");
+  ctx.setTheme("#FFD100", "#c9a600");
   const { state } = ctx;
   const modeName  = MODES[state.mode]?.name || "Klasično";
   const diffName  = DIFFICULTIES[state.difficulty]?.name || "Lahko";
