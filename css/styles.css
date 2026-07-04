@@ -72,16 +72,48 @@ body {
 .blob {
   position: absolute;
   border-radius: 50%;
-  filter: blur(8px);
-  opacity: 0.5;
+  filter: blur(60px);
+  opacity: 0.22;
   animation: float 9s ease-in-out infinite;
 }
-.blob-1 { width: 210px; height: 210px; background: var(--sun);  top: -60px; left: -50px; }
-.blob-2 { width: 260px; height: 260px; background: var(--sky);  bottom: -90px; right: -70px; animation-delay: -3s; }
-.blob-3 { width: 160px; height: 160px; background: var(--pink); top: 40%; right: -40px; animation-delay: -6s; }
+.blob-1 { width: 230px; height: 230px; background: var(--purple); top: -70px; left: -60px; }
+.blob-2 { width: 280px; height: 280px; background: var(--blue);   bottom: -100px; right: -80px; animation-delay: -3s; }
+.blob-3 { width: 180px; height: 180px; background: var(--pink);   top: 42%; right: -50px; animation-delay: -6s; }
 @keyframes float {
   0%,100% { transform: translateY(0) scale(1); }
   50%     { transform: translateY(-22px) scale(1.06); }
+}
+
+/* ---- confetti / sticker pattern accents (design system) ---- */
+.confetti {
+  position: absolute;
+  width: 13px; height: 13px;
+  border-radius: 3px;
+  opacity: .0;
+  animation: confetti-in .6s ease forwards, confetti-drift 14s ease-in-out infinite;
+}
+.confetti.dot { border-radius: 50%; width: 10px; height: 10px; }
+.confetti.bar { width: 6px; height: 20px; border-radius: 3px; }
+@keyframes confetti-in { to { opacity: .7; } }
+@keyframes confetti-drift {
+  0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+  50%      { transform: translateY(-16px) rotate(calc(var(--r, 0deg) + 12deg)); }
+}
+.c1  { top: 9%;  left: 11%; background: var(--yellow); --r: 22deg; }
+.c2  { top: 15%; right: 13%; background: var(--pink);   animation-delay: -1.5s; }
+.c3  { top: 26%; left: 7%;  background: var(--green);  --r: -18deg; animation-delay: -3s; }
+.c4  { top: 33%; right: 9%;  background: var(--blue);   --r: 40deg; animation-delay: -4.5s; }
+.c5  { top: 47%; left: 14%; background: var(--orange); animation-delay: -2s; }
+.c6  { top: 55%; right: 12%; background: var(--purple); --r: -30deg; animation-delay: -6s; }
+.c7  { top: 63%; left: 9%;  background: var(--pink);   --r: 15deg; animation-delay: -1s; }
+.c8  { top: 71%; right: 15%; background: var(--yellow); animation-delay: -5s; }
+.c9  { top: 80%; left: 16%; background: var(--blue);   --r: -25deg; animation-delay: -3.5s; }
+.c10 { top: 86%; right: 10%; background: var(--green);  animation-delay: -2.5s; }
+.c11 { top: 92%; left: 22%; background: var(--orange); animation-delay: -4s; }
+.c12 { top: 40%; left: 50%; background: var(--yellow); --r: 35deg; animation-delay: -6.5s; opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .confetti { animation: confetti-in .4s ease forwards; }
+  .blob { animation: none; }
 }
 
 /* ---- app shell ---- */
@@ -129,15 +161,22 @@ body {
 .logo .cheer { display: block; font-size: 0.42em; color: var(--yellow); margin-top: .35em; letter-spacing: 2px; }
 .subtitle { text-align: center; color: var(--ink-soft); font-size: 1.05rem; margin-top: 14px; }
 
-/* image logo (from the design system PNG) */
+/* image logo (from the design system PNG).
+   NOTE: current export has a baked white background, so we frame it as a
+   rounded sticker tile. Once a truly-transparent PNG replaces img/logo.png,
+   drop `background`, `padding`, `border-radius` and switch to drop-shadow
+   so it floats directly on the dark bg. */
 .brand-logo {
   display: block;
-  width: min(72vw, 300px);
-  height: auto;
+  width: min(66vw, 250px);
+  aspect-ratio: 3 / 2;
+  object-fit: contain;
   margin: 0 auto;
-  filter: drop-shadow(0 6px 16px rgba(0,0,0,.45));
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: 0 12px 30px rgba(0,0,0,.5);
 }
-.brand-logo.sm { width: 140px; }
+.brand-logo.sm { width: 120px; aspect-ratio: 3 / 2; border-radius: 14px; }
 .section-title { font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; text-align: center; }
 .hint { color: var(--ink-soft); font-size: .92rem; text-align: center; }
 .hint a { color: inherit; text-decoration: underline; }
@@ -181,6 +220,20 @@ body {
 
 .btn-row { display: flex; gap: 12px; }
 .btn-row .btn { flex: 1; }
+
+/* ---- Bangers display tuning ----
+   Bangers ships a single 400 weight, so any 700/800 declaration triggers
+   ugly synthetic bold. Pin display headings to 400 and add poster-style
+   letter-spacing. (Poppins body bolds keep their synthetic weight — fine
+   for small emphasis text.) */
+.btn, .btn-lg,
+.section-title, .turn-name, .cb-logo, .cb-hint,
+.modal h2, .choice h3, .diff, .tier-flag,
+.podium-row .rank, #auth-title, .cc-add-form p {
+  font-weight: 400;
+  letter-spacing: .8px;
+}
+.section-title, .modal h2, .turn-name { letter-spacing: 1px; }
 
 /* small round icon button */
 .icon-btn {
@@ -438,10 +491,10 @@ body {
   flex: 1;
   display: grid;
   align-items: center;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: clamp(1.4rem, 6.2vw, 2rem);
-  line-height: 1.2;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: clamp(1.3rem, 5.6vw, 1.85rem);
+  line-height: 1.32;
   text-align: center;
 }
 .card .sips-badge {
