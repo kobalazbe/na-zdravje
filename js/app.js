@@ -288,7 +288,6 @@ function render() {
   const builder = SCREENS[state.screen] || HomeScreen;
   root.innerHTML = "";
   root.appendChild(builder(ctx));
-  syncBottomNav(state.screen);
   window.scrollTo(0, 0);
   // One-time age/responsible-drinking gate in front of any actual game screen.
   if (!state.ageAcknowledged && !modalNode) openModal(AgeGateModal);
@@ -298,75 +297,7 @@ function showLogin(mode) {
   closeModal();
   root.innerHTML = "";
   root.appendChild(LoginScreen(ctx, mode));
-  syncBottomNav("login");
   window.scrollTo(0, 0);
-}
-
-/* ---- bottom navigation (browsing screens only, never in-game or login) ---- */
-const NAV_SCREENS = new Set(["home", "setup", "mode", "summary", "customCards"]);
-let _navEl = null;
-function buildBottomNav() {
-  const nav = document.createElement("nav");
-  nav.id = "bottom-nav";
-  nav.setAttribute("aria-label", "Navigacija");
-  nav.innerHTML = `
-    <button class="nav-item" data-nav="home"><span class="nav-ico">🏠</span><span class="nav-label">Domov</span></button>
-    <button class="nav-item" data-nav="play"><span class="nav-ico">🎲</span><span class="nav-label">Igraj</span></button>
-    <button class="nav-item nav-premium" data-nav="premium"><span class="nav-ico">👑</span><span class="nav-label">Premium</span></button>
-    <button class="nav-item" data-nav="how"><span class="nav-ico">📖</span><span class="nav-label">Pravila</span></button>
-    <button class="nav-item" data-nav="account"><span class="nav-ico">👤</span><span class="nav-label">Račun</span></button>
-  `;
-  nav.addEventListener("click", (e) => {
-    const btn = e.target.closest("[data-nav]");
-    if (!btn) return;
-    audio.pop();
-    switch (btn.dataset.nav) {
-      case "home": ctx.go("home"); break;
-      case "play": ctx.go("setup"); break;
-      case "premium":
-        if (entitlement.isPremium() && ctx.currentUser) ctx.manageCustomCards();
-        else ctx.showPaywall("nav");
-        break;
-      case "how": ctx.showHowTo(); break;
-      case "account":
-        if (ctx.currentUser) openModal((c) => _accountModal(c));
-        else ctx.exitGuestToLogin("login");
-        break;
-    }
-  });
-  document.body.appendChild(nav);
-  return nav;
-}
-function syncBottomNav(screen) {
-  if (!_navEl) _navEl = buildBottomNav();
-  const show = NAV_SCREENS.has(screen);
-  _navEl.classList.toggle("show", show);
-  document.body.classList.toggle("nav-open", show);
-  const activeMap = { home: "home", setup: "play", mode: "play", customCards: "premium" };
-  const active = activeMap[screen] || "";
-  _navEl.querySelectorAll("[data-nav]").forEach((b) => {
-    b.classList.toggle("active", b.dataset.nav === active);
-  });
-}
-function _accountModal(ctx) {
-  const escv = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const node = document.createElement("div");
-  node.className = "modal-backdrop";
-  const premium = ctx.isPremium();
-  node.innerHTML = `
-    <div class="modal">
-      <div class="big-emoji">${premium ? "👑" : "👤"}</div>
-      <h2>${escv(ctx.displayName())}</h2>
-      <p>${escv(ctx.currentUser?.email || "")}${premium ? "<br>✨ Premium aktiven" : ""}</p>
-      <div class="stack">
-        <button class="btn" data-act="close">Zapri</button>
-        <button class="btn btn-ghost" data-act="logout">Odjava</button>
-      </div>
-    </div>
-  `;
-  node.querySelector('[data-act="logout"]').onclick = () => { ctx.audio.pop(); ctx.closeModal(); ctx.signOut(); };
-  node.querySelector('[data-act="close"]').onclick = () => { ctx.audio.pop(); ctx.closeModal(); };
-  return node;
 }
 
 function openModal(builder) {
