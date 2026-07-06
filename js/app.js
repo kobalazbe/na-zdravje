@@ -45,6 +45,20 @@ function setGuest(on) {
   try { on ? localStorage.setItem(GUEST_KEY, "1") : localStorage.removeItem(GUEST_KEY); } catch (_) {}
 }
 
+// Set when a logged-out user taps a paid plan: after they sign in we reopen the
+// paywall so they can finish the purchase. Persisted so it survives the Google
+// OAuth round-trip (which reloads the page).
+const RETURN_PAYWALL_KEY = "naZdravje.returnPaywall.v1";
+function consumeReturnPaywall() {
+  try {
+    if (localStorage.getItem(RETURN_PAYWALL_KEY) === "1") {
+      localStorage.removeItem(RETURN_PAYWALL_KEY);
+      return true;
+    }
+  } catch (_) {}
+  return false;
+}
+
 const SCREENS = {
   home: HomeScreen,
   setup: SetupScreen,
@@ -147,6 +161,18 @@ const ctx = {
     if (profile) entitlement.setFromProfile(profile);
     sanitizeStart();
     render();
+    // Came here from tapping a plan while logged out → drop them back on the paywall.
+    if (consumeReturnPaywall() && !entitlement.isPremium()) ctx.showPaywall("post_login");
+  },
+
+  // A logged-out user tapped a paid plan: remember to reopen the paywall, then
+  // send them to the login form.
+  loginThenReturnToPaywall() {
+    try { localStorage.setItem(RETURN_PAYWALL_KEY, "1"); } catch (_) {}
+    setGuest(false);
+    ctx.isGuest = false;
+    closeModal();
+    showLogin("login");
   },
 
   async signOut() {
@@ -409,6 +435,9 @@ async function boot() {
     audio.success();
     confetti.burst(110, 0.3);
     openModal((c) => _welcomeModal(c));
+  } else if (consumeReturnPaywall() && !entitlement.isPremium()) {
+    // Signed in via Google specifically to buy → reopen the paywall.
+    ctx.showPaywall("post_login");
   }
 
   // After a Stripe redirect: poll with back-off until the webhook lands

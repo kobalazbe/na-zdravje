@@ -36,9 +36,9 @@
   --accent:      var(--yellow);
   --accent-deep: #c9a600;
 
-  /* type — Bangers headlines + Poppins body (fallbacks until self-hosted) */
-  --font-display: "Bangers", "Baloo 2", system-ui, sans-serif;
-  --font-body:    "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* type — Baloo 2 (display) + Fredoka (body); both cover Slovenian č/š/ž */
+  --font-display: "Baloo 2", system-ui, sans-serif;
+  --font-body:    "Fredoka", system-ui, -apple-system, "Segoe UI", sans-serif;
 
   /* shape */
   --radius:    16px;
@@ -218,22 +218,27 @@ body {
 .btn-pop { animation: pop .35s ease; }
 @keyframes pop { 0%{transform:scale(1)} 40%{transform:scale(1.08)} 100%{transform:scale(1)} }
 
+/* premium CTA — distinct from the yellow primary, glows to draw the eye */
+.btn-premium {
+  background: linear-gradient(120deg, var(--purple) 0%, var(--pink) 100%);
+  color: #fff;
+  border: none;
+  box-shadow: 0 6px 0 #6a1fae, 0 0 24px rgba(255,45,122,.4);
+  animation: premium-glow 2.4s ease-in-out infinite;
+}
+.btn-premium:active { transform: translateY(4px); box-shadow: 0 2px 0 #6a1fae, 0 0 18px rgba(255,45,122,.4); }
+@keyframes premium-glow {
+  0%, 100% { box-shadow: 0 6px 0 #6a1fae, 0 0 18px rgba(255,45,122,.3); }
+  50%      { box-shadow: 0 6px 0 #6a1fae, 0 0 30px rgba(255,45,122,.6); }
+}
+@media (prefers-reduced-motion: reduce) { .btn-premium { animation: none; } }
+
 .btn-row { display: flex; gap: 12px; }
 .btn-row .btn { flex: 1; }
 
-/* ---- Bangers display tuning ----
-   Bangers ships a single 400 weight, so any 700/800 declaration triggers
-   ugly synthetic bold. Pin display headings to 400 and add poster-style
-   letter-spacing. (Poppins body bolds keep their synthetic weight — fine
-   for small emphasis text.) */
-.btn, .btn-lg,
-.section-title, .turn-name, .cb-logo, .cb-hint,
-.modal h2, .choice h3, .diff, .tier-flag,
-.podium-row .rank, #auth-title, .cc-add-form p {
-  font-weight: 400;
-  letter-spacing: .8px;
-}
-.section-title, .modal h2, .turn-name { letter-spacing: 1px; }
+/* Baloo 2 is a rounded display face — a touch of tracking keeps the
+   all-emphasis headings from feeling cramped, but it keeps its bold weights. */
+.btn, .section-title, .modal h2, .turn-name, .choice h3 { letter-spacing: .3px; }
 
 /* small round icon button */
 .icon-btn {
@@ -718,16 +723,20 @@ body {
 .tier {
   position: relative; display: flex; align-items: center; gap: 12px;
   border: 2px solid var(--surface-3); background: var(--surface-2); cursor: pointer;
-  border-radius: var(--radius); padding: 8px 12px; text-align: left;
+  border-radius: var(--radius); padding: 10px 14px; text-align: left;
+  color: var(--ink);
   font-family: var(--font-body); transition: transform .08s ease, border-color .15s ease;
 }
 .tier:active { transform: translateY(2px); }
-.tier-best { border-color: var(--grape); }
-.tier-emoji { font-size: 1.3rem; flex: 0 0 auto; }
+.tier-best { border-color: var(--purple); background: rgba(138,43,226,.16); }
+.tier-emoji { font-size: 1.4rem; flex: 0 0 auto; }
 .tier-main { flex: 1; display: flex; flex-direction: column; }
-.tier-main b { font-size: .96rem; }
-.tier-sub { color: var(--ink-soft); font-size: .75rem; }
-.tier-price { font-family: var(--font-display); font-weight: 800; font-size: 1.05rem; flex: 0 0 auto; }
+.tier-main b { font-size: 1rem; color: #fff; font-weight: 700; }
+.tier-sub { color: var(--ink-soft); font-size: .78rem; }
+.tier-price {
+  font-family: var(--font-display); font-weight: 800; font-size: 1.15rem;
+  color: var(--yellow); flex: 0 0 auto;
+}
 .tier-flag {
   position: absolute; top: -9px; right: 12px;
   background: var(--grape); color: #fff; border-radius: 999px;

@@ -44,7 +44,7 @@ export function HomeScreen(ctx) {
         </div>
         <button class="ps-refresh" data-act="refresh">↺ Osveži</button>
        </div>`
-    : `<button class="btn btn-ghost" data-act="premium">👑 Odkleni Premium</button>`;
+    : `<button class="btn btn-premium" data-act="premium">👑 Odkleni Premium</button>`;
 
   const node = el(`
     <section class="screen center-col">
@@ -190,10 +190,6 @@ export function ModeScreen(ctx) {
       <p class="section-title" style="font-size:1.05rem;margin:12px 0 6px">Preskoki izzivov</p>
       <div class="diff-row" id="skipRow"></div>
 
-      <button class="btn btn-ghost" data-act="card-types" style="margin-top:12px">
-        🃏 Vrste kartic <span id="cardTypeCount"></span>
-      </button>
-
       <div class="pushed-bottom stack" style="padding-top:20px">
         <button class="btn btn-lg" data-act="play" id="playBtn">Igraj! 🚀</button>
         <div id="tiltArea"></div>
@@ -259,16 +255,6 @@ export function ModeScreen(ctx) {
     });
   }
 
-  function updateCardTypeCount() {
-    const n = Object.values(state.cardTypeFilters).filter(Boolean).length;
-    const el = node.querySelector("#cardTypeCount");
-    if (el) el.textContent = `(${n}/7 vključenih)`;
-  }
-  updateCardTypeCount();
-  node.querySelector('[data-act="card-types"]').onclick = () => {
-    ctx.audio.pop();
-    ctx.showCardTypeFilter(updateCardTypeCount);
-  };
   node.querySelector('[data-act="back"]').onclick = () => { ctx.audio.pop(); ctx.go("setup"); };
 
   function triggerPlay() {
@@ -1054,8 +1040,6 @@ export function PaywallModal(ctx, source = "generic", onDismiss) {
 
         <div class="tier-list">${tiers}</div>
 
-        <button class="btn" data-act="verify">✓ Plačal sem — preveri dostop</button>
-
         <div class="redeem">
           <input class="text-input" id="redeemInput" placeholder="Imaš kodo? Vnesi jo…" autocomplete="off" />
           <button class="btn icon-btn" data-act="redeem" aria-label="Vnovči">✓</button>
@@ -1070,33 +1054,17 @@ export function PaywallModal(ctx, source = "generic", onDismiss) {
 
   const msg = node.querySelector("#redeemMsg");
   const input = node.querySelector("#redeemInput");
-  const verifyBtn = node.querySelector('[data-act="verify"]');
-  const isGuest = ctx.isGuest && !ctx.currentUser;
+  const isLoggedOut = !ctx.currentUser; // guest OR nobody signed in
 
   node.querySelectorAll("[data-tier]").forEach((b) => {
     b.onclick = () => {
       ctx.audio.pop();
-      // A guest has no account to attach the purchase to — pop up a prompt to
-      // register / log in. Their game is kept either way.
-      if (isGuest) { ctx.promptGuestRegister(); return; }
+      // No account to attach the purchase to → send them to log in and come
+      // straight back to this paywall once they're signed in.
+      if (isLoggedOut) { ctx.loginThenReturnToPaywall(); return; }
       ctx.showCheckoutConsent(b.dataset.tier);
     };
   });
-
-  verifyBtn.onclick = async () => {
-    verifyBtn.disabled = true;
-    verifyBtn.textContent = "Preverjam...";
-    await ctx.refreshEntitlement();
-    if (ctx.isPremium()) {
-      ctx.audio.pop();
-      ctx.closeModal();
-      ctx.rerender();
-    } else {
-      verifyBtn.disabled = false;
-      verifyBtn.textContent = "✓ Plačal sem — preveri dostop";
-      msg.textContent = "Plačilo še ni potrjeno. Počakaj hip in poskusi znova.";
-    }
-  };
 
   function doRedeem() {
     const r = ctx.redeemCode(input.value);
