@@ -182,24 +182,22 @@ export function ModeScreen(ctx) {
         <h2 class="section-title">Izberi način</h2>
       </div>
 
-      <div class="choice-grid" id="modeGrid"></div>
+      <div class="mode-body">
+        <div class="choice-grid" id="modeGrid"></div>
 
-      <p class="section-title" style="font-size:1.05rem;margin:12px 0 6px">Težavnost</p>
-      <div class="diff-row" id="diffRow"></div>
+        <p class="section-title" style="font-size:1.05rem;margin:18px 0 6px">Težavnost</p>
+        <div class="diff-row" id="diffRow"></div>
 
-      <p class="section-title" style="font-size:1.05rem;margin:12px 0 6px">Preskoki izzivov</p>
-      <div class="diff-row" id="skipRow"></div>
-
-      <div class="pushed-bottom stack" style="padding-top:20px">
-        <button class="btn btn-lg" data-act="play" id="playBtn">Igraj! 🚀</button>
-        <div id="tiltArea"></div>
+        <div class="stack" style="margin-top:26px">
+          <button class="btn btn-lg" data-act="play" id="playBtn">Igraj! 🚀</button>
+          <div id="tiltArea"></div>
+        </div>
       </div>
     </section>
   `);
 
   const modeGrid = node.querySelector("#modeGrid");
   const diffRow = node.querySelector("#diffRow");
-  const skipRow = node.querySelector("#skipRow");
 
   // a mode is premium-gated when it's the adult (Pikantno) pack and the user is free
   const isLocked = (m) => m.adult && !ctx.isPremium();
@@ -241,17 +239,6 @@ export function ModeScreen(ctx) {
     `).join("");
     diffRow.querySelectorAll("[data-diff]").forEach((b) => {
       b.onclick = () => { ctx.audio.pop(); state.difficulty = b.dataset.diff; ctx.save(); renderDiffs(); };
-    });
-  }
-  function renderSkips() {
-    skipRow.innerHTML = Object.values(SKIP_LIMIT_OPTIONS).map((s) => `
-      <button class="diff ${state.skipLimit === s.id ? "selected" : ""}"
-              data-skip="${s.id}" style="background:${s.color};box-shadow:0 5px 0 ${s.colorDeep}">
-        <span class="ico">${s.ico}</span>${s.name}
-      </button>
-    `).join("");
-    skipRow.querySelectorAll("[data-skip]").forEach((b) => {
-      b.onclick = () => { ctx.audio.pop(); state.skipLimit = b.dataset.skip; ctx.save(); renderSkips(); };
     });
   }
 
@@ -337,7 +324,6 @@ export function ModeScreen(ctx) {
 
   renderModes();
   renderDiffs();
-  renderSkips();
   return node;
 }
 
