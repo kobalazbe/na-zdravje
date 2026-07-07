@@ -73,6 +73,15 @@ export async function updatePassword(newPassword) {
   return supabase.auth.updateUser({ password: newPassword })
 }
 
+// Verify an email one-time token (signup confirmation / password recovery) from
+// a `token_hash` carried in the link. Unlike the auto-redirecting
+// /auth/v1/verify GET link, the token is only spent when THIS runs in the
+// browser — so email/link pre-fetchers (Gmail, Apple Mail, scanners) can't burn
+// it before the user clicks. type is 'signup' | 'recovery' | 'email' | …
+export async function verifyEmailOtp(tokenHash, type) {
+  return supabase.auth.verifyOtp({ token_hash: tokenHash, type })
+}
+
 export async function getCustomCards(userId, mode, difficulty) {
   return supabase
     .from('custom_cards')

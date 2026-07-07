@@ -20,7 +20,7 @@ import {
 import {
   getSession, getProfile, signIn, signUp, signOut as authSignOutFn,
   resetPassword, updatePassword, signInWithGoogle, displayName, supabase,
-  getCustomCards, addCustomCard, deleteCustomCard,
+  getCustomCards, addCustomCard, deleteCustomCard, verifyEmailOtp,
 } from "./auth.js";
 
 const root = document.getElementById("app");
@@ -355,7 +355,31 @@ async function boot() {
 
   // Did the user just click the email-confirmation link? (implicit flow puts
   // type=signup in the hash; PKCE returns a ?code we exchange below.)
-  const confirmedSignup = hashParams.get("type") === "signup";
+  let confirmedSignup = hashParams.get("type") === "signup";
+
+  // Preferred email-link flow: token_hash carried in the query. We verify it
+  // client-side via verifyOtp so the one-time token is only spent when the
+  // user's browser runs JS — immune to email/link pre-fetch that was burning
+  // the token and causing "Povezava ni veljavna ali je potekla".
+  const tokenHash = qParams.get("token_hash");
+  const otpType   = qParams.get("type"); // 'recovery' | 'signup'
+  if (tokenHash && otpType) {
+    history.replaceState(null, "", window.location.pathname);
+    const { error } = await verifyEmailOtp(tokenHash, otpType);
+    if (error) {
+      showLogin();
+      const errEl = document.getElementById("auth-err");
+      if (errEl) errEl.textContent = "Povezava ni veljavna ali je potekla. Poskusi znova.";
+      return;
+    }
+    if (otpType === "recovery") {
+      root.innerHTML = "";
+      root.appendChild(LoginScreen(ctx, "reset"));
+      return;
+    }
+    // signup confirmed → fall through to load the fresh session + welcome them
+    confirmedSignup = true;
+  }
 
   if (window.location.hash.includes("type=recovery")) {
     history.replaceState(null, "", window.location.pathname);
