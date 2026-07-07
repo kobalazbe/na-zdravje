@@ -32,14 +32,20 @@ export function HomeScreen(ctx) {
   ctx.setTheme("#FFD100", "#c9a600");
   const premium = ctx.isPremium();
   const hrs = ctx.passHoursLeft();
+  const paidUntil = ctx.paidUntil();
   const isGuest = ctx.isGuest && !ctx.currentUser;
   const userName = ctx.currentUser ? ctx.displayName() : (isGuest ? "Gost" : "");
+
+  // pass → hours left; dated premium → expiry date; lifetime premium → no date
+  const statusTitle = hrs
+    ? `Žur Pass · še ${hrs} h`
+    : (paidUntil ? `Premium · velja do ${fmtDate(paidUntil)}` : "Premium aktiven");
 
   const premiumBlock = premium
     ? `<div class="premium-status">
         <span class="ps-crown">${hrs ? "🎟️" : "👑"}</span>
         <div class="ps-text">
-          <div class="ps-title">${hrs ? `Žur Pass · še ${hrs} h` : "Premium aktiven"}</div>
+          <div class="ps-title">${statusTitle}</div>
           <div class="ps-sub">Pikantno · vse težavnosti · 100+ kart</div>
         </div>
         <button class="ps-refresh" data-act="refresh">↺ Osveži</button>
@@ -734,6 +740,16 @@ function sipWord(n) {
   if (m10 === 2) return "požirka";
   if (m10 === 3 || m10 === 4) return "požirki";
   return "požirkov";
+}
+
+/* Slovenian expiry date, e.g. "9. avg. 2026". Falls back gracefully. */
+function fmtDate(ms) {
+  if (!ms) return "";
+  try {
+    return new Intl.DateTimeFormat("sl-SI", { day: "numeric", month: "short", year: "numeric" }).format(new Date(ms));
+  } catch (_) {
+    return new Date(ms).toLocaleDateString();
+  }
 }
 
 /* ===========================================================

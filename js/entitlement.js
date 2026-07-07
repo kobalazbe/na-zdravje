@@ -42,19 +42,29 @@ function persist() {
 /* ---------- public API ---------- */
 
 export function isPremium() {
-  if (ent.tier === "premium") return true;
-  if (ent.tier === "pass" && ent.passExpiry && Date.now() < ent.passExpiry) return true;
+  const now = Date.now();
+  // premium: a null expiry = lifetime (redeem code / legacy); a dated expiry now lapses.
+  if (ent.tier === "premium") return !ent.passExpiry || now < ent.passExpiry;
+  if (ent.tier === "pass" && ent.passExpiry && now < ent.passExpiry) return true;
   return false;
 }
 
 export function getTier() {
-  // collapse an expired pass back to free for display/logic
-  if (ent.tier === "pass" && (!ent.passExpiry || Date.now() >= ent.passExpiry)) return "free";
+  // collapse an expired paid plan back to free for display/logic
+  const now = Date.now();
+  if (ent.tier === "pass" && (!ent.passExpiry || now >= ent.passExpiry)) return "free";
+  if (ent.tier === "premium" && ent.passExpiry && now >= ent.passExpiry) return "free";
   return ent.tier;
 }
 
 export function passActiveUntil() {
   return ent.tier === "pass" ? ent.passExpiry : null;
+}
+
+/* When the active paid plan expires (ms). null = no plan OR lifetime premium. */
+export function paidUntil() {
+  if (!isPremium()) return null;
+  return ent.passExpiry || null;
 }
 
 /* hours left on an active pass (0 if none) */
@@ -86,8 +96,10 @@ export function redeem(rawCode) {
  * Phase 1: POST { code } to /api/validate and reconcile, honoring GRACE_MS.
  */
 export async function refresh() {
-  if (ent.tier === "pass" && ent.passExpiry && Date.now() >= ent.passExpiry) {
-    // pass lapsed → return to free, but remember it lapsed for the upsell
+  // any time-boxed paid plan (pass, or a dated premium) that has run out → free,
+  // but remember it lapsed for the upsell
+  const paidWithExpiry = ent.tier === "pass" || ent.tier === "premium";
+  if (paidWithExpiry && ent.passExpiry && Date.now() >= ent.passExpiry) {
     ent.tier = "free";
     ent.passLapsed = true;
     persist();

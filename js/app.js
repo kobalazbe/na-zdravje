@@ -187,6 +187,7 @@ const ctx = {
   isPremium: entitlement.isPremium,
   getTier: entitlement.getTier,
   passHoursLeft: entitlement.passHoursLeft,
+  paidUntil: entitlement.paidUntil,
   track,
 
   showPaywall(source = "generic", onDismiss) {
@@ -489,6 +490,14 @@ document.addEventListener("visibilitychange", async () => {
 });
 
 function _paymentSuccessModal(ctx) {
+  const until = ctx.paidUntil();
+  let untilLine = "";
+  if (until) {
+    try {
+      const d = new Intl.DateTimeFormat("sl-SI", { day: "numeric", month: "short", year: "numeric" }).format(new Date(until));
+      untilLine = `<p class="hint">Tvoj paket velja do <b>${d}</b>.</p>`;
+    } catch (_) {}
+  }
   const node = document.createElement("div");
   node.className = "modal-backdrop";
   node.innerHTML = `
@@ -496,6 +505,7 @@ function _paymentSuccessModal(ctx) {
       <div class="big-emoji">🎉</div>
       <h2>Dobrodošel v Premium!</h2>
       <p>Tvoj dostop je aktiviran. Uživaj v vseh vsebinah!</p>
+      ${untilLine}
       <div class="stack">
         <button class="btn" data-act="ok">Začni igrati 🚀</button>
       </div>

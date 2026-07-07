@@ -1,9 +1,17 @@
-// Supabase Edge Function — Stripe webhook handler
+// Supabase Edge Function — Stripe webhook handler (ONE-TIME payments)
 // Manually verifies Stripe signatures using Web Crypto API (no Stripe SDK).
 //
+// Model: every plan is a ONE-TIME purchase that grants time-boxed access, then
+// the account reverts to free. metadata.tier on the Checkout Session decides the
+// plan and duration:
+//   pass    → tier "pass"    · 48 hours
+//   monthly → tier "premium" · 30 days
+//   yearly  → tier "premium" · 365 days
+// (There are no subscriptions, so customer.subscription.* events are ignored.)
+//
 // Required env vars (Supabase Dashboard → Settings → Edge Functions → Secrets):
-//   STRIPE_SECRET_KEY       — sk_test_... or sk_live_...
-//   STRIPE_WEBHOOK_SECRET   — whsec_... (from Stripe → Webhooks → signing secret)
+//   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY  — auto-available
+//   STRIPE_WEBHOOK_SECRET  — whsec_... (from Stripe → Webhooks → signing secret)
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -13,16 +21,13 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
-const STRIPE_API = "https://api.stripe.com/v1";
-const STRIPE_KEY = Deno.env.get("STRIPE_SECRET_KEY")!;
-
-const TIER_MAP: Record<string, string> = {
-  pass:    "pass",
-  monthly: "premium",
-  yearly:  "premium",
+// stripe metadata.tier → [internal DB tier, access duration in ms]
+const DAY = 24 * 60 * 60 * 1000;
+const PLANS: Record<string, { tier: string; ms: number }> = {
+  pass:    { tier: "pass",    ms: 48 * 60 * 60 * 1000 },
+  monthly: { tier: "premium", ms: 30 * DAY },
+  yearly:  { tier: "premium", ms: 365 * DAY },
 };
-
-const PASS_DURATION_MS = 48 * 60 * 60 * 1000;
 
 serve(async (req) => {
   if (req.method !== "POST") {
@@ -42,39 +47,25 @@ serve(async (req) => {
 
   try {
     if (event.type === "checkout.session.completed") {
-      const session = event.data as Record<string, unknown>;
-      const obj     = session.object as Record<string, unknown>;
+      const obj     = (event.data as Record<string, unknown>).object as Record<string, unknown>;
       const details = obj.customer_details as Record<string, string> | null;
       const email   = details?.email ?? (obj.customer_email as string | null);
       const meta    = obj.metadata as Record<string, string> | null;
-      const tier    = meta?.tier ?? "monthly";
+      const planKey = meta?.tier ?? "";
 
+      // one-time only — ignore anything that isn't a fully paid checkout
+      if (obj.payment_status && obj.payment_status !== "paid") {
+        console.warn("Session not paid, ignoring:", obj.id, obj.payment_status);
+        return new Response("OK", { status: 200 });
+      }
       if (!email) {
         console.warn("No email on session:", obj.id);
         return new Response("OK", { status: 200 });
       }
 
-      await grantTier(email, tier, obj.subscription as string | null);
+      await grantPlan(email, planKey, obj.customer as string | null);
     }
-
-    if (event.type === "customer.subscription.deleted") {
-      const sub      = (event.data as Record<string, unknown>).object as Record<string, unknown>;
-      const customer = await stripeGet(`/customers/${sub.customer}`);
-      const email    = customer.email as string | null;
-      if (email) await revokeToFree(email);
-    }
-
-    if (
-      event.type === "customer.subscription.updated" ||
-      event.type === "customer.subscription.created"
-    ) {
-      const sub      = (event.data as Record<string, unknown>).object as Record<string, unknown>;
-      const customer = await stripeGet(`/customers/${sub.customer}`);
-      const email    = customer.email as string | null;
-      if (email && sub.status === "active") {
-        await grantTier(email, "monthly", sub.id as string);
-      }
-    }
+    // customer.subscription.* intentionally NOT handled — model is one-time.
   } catch (err) {
     console.error("Handler error:", err);
     return new Response("Internal error", { status: 500 });
@@ -121,52 +112,41 @@ async function verifyStripeSignature(
   return JSON.parse(body) as Record<string, unknown>;
 }
 
-/* ---- Minimal Stripe REST helper ---- */
-async function stripeGet(path: string): Promise<Record<string, unknown>> {
-  const res = await fetch(`${STRIPE_API}${path}`, {
-    headers: { Authorization: `Bearer ${STRIPE_KEY}` },
-  });
-  if (!res.ok) throw new Error(`Stripe GET ${path} → ${res.status}`);
-  return res.json();
-}
-
 /* ---- Supabase helpers ---- */
+// Paginated lookup so it keeps working past the first 50 users.
 async function getUserByEmail(email: string) {
-  const { data, error } = await supabase.auth.admin.listUsers();
-  if (error) throw error;
-  return data.users.find((u) => u.email === email) ?? null;
+  const target = email.toLowerCase();
+  for (let page = 1; page <= 100; page++) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 200 });
+    if (error) throw error;
+    const hit = data.users.find((u) => (u.email ?? "").toLowerCase() === target);
+    if (hit) return hit;
+    if (data.users.length < 200) break; // last page
+  }
+  return null;
 }
 
-async function grantTier(email: string, stripeTier: string, subscriptionId: string | null) {
+async function grantPlan(email: string, planKey: string, customerId: string | null) {
+  const plan = PLANS[planKey];
+  if (!plan) {
+    console.warn("Unknown plan tier in metadata:", planKey);
+    return;
+  }
   const user = await getUserByEmail(email);
   if (!user) {
     console.warn("No Supabase user found for email:", email);
     return;
   }
 
-  const tier = TIER_MAP[stripeTier] ?? "premium";
-  const passExpiry = tier === "pass"
-    ? new Date(Date.now() + PASS_DURATION_MS).toISOString()
-    : null;
+  const passExpiry = new Date(Date.now() + plan.ms).toISOString();
 
-  // upsert so it works even if the profile row was never created
   const { error } = await supabase
     .from("profiles")
     .upsert(
-      { id: user.id, tier, pass_expiry: passExpiry, stripe_subscription_id: subscriptionId },
+      { id: user.id, tier: plan.tier, pass_expiry: passExpiry, stripe_customer_id: customerId },
       { onConflict: "id" }
     );
 
   if (error) throw error;
-  console.log(`Granted tier=${tier} to ${email}`);
-}
-
-async function revokeToFree(email: string) {
-  const user = await getUserByEmail(email);
-  if (!user) return;
-  await supabase
-    .from("profiles")
-    .update({ tier: "free", pass_expiry: null })
-    .eq("id", user.id);
-  console.log(`Revoked to free: ${email}`);
+  console.log(`Granted plan=${planKey} (tier=${plan.tier}) to ${email}, until ${passExpiry}`);
 }
