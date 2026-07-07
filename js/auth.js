@@ -62,7 +62,10 @@ export async function getProfile(userId) {
 
 export async function resetPassword(email) {
   return supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin,
+    // Must return to the game page (/index.html), not the bare origin: on
+    // production `/` serves landing.html, which loads no auth scripts, so the
+    // `type=recovery` handler in app.js boot() would never run there.
+    redirectTo: window.location.origin + window.location.pathname,
   })
 }
 
