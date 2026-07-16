@@ -29,7 +29,7 @@ function avatar(p, cls = "") {
    HOME
    =========================================================== */
 export function HomeScreen(ctx) {
-  ctx.setTheme("#FFD100", "#c9a600");
+  ctx.setTheme("#ff6b6b", "#e84b4b");
   const premium = ctx.isPremium();
   const hrs = ctx.passHoursLeft();
   const paidUntil = ctx.paidUntil();
@@ -104,7 +104,7 @@ export function HomeScreen(ctx) {
    SETUP — players
    =========================================================== */
 export function SetupScreen(ctx) {
-  ctx.setTheme("#8A2BE2", "#6a1fb0");
+  ctx.setTheme("#845ef7", "#6741d9");
   const { state } = ctx;
 
   const node = el(`
@@ -175,7 +175,7 @@ export function SetupScreen(ctx) {
    MODE + DIFFICULTY select
    =========================================================== */
 export function ModeScreen(ctx) {
-  ctx.setTheme("#00B8FF", "#0090cc");
+  ctx.setTheme("#4dabf7", "#1f8de0");
   const { state } = ctx;
   if (!state.mode) state.mode = "classic";
   if (!state.difficulty) state.difficulty = "lahko";
@@ -219,12 +219,10 @@ export function ModeScreen(ctx) {
       const locked = isLocked(m);
       return `
       <button class="choice ${state.mode === m.id ? "selected" : ""} ${locked ? "locked" : ""}"
-              data-mode="${m.id}" style="--mode-color:${m.color};--mode-deep:${m.colorDeep}">
-        <span class="choice-icon">${locked ? "🔒" : m.emoji}</span>
-        <span class="choice-body">
-          <h3>${m.name}</h3>
-          <p>${m.blurb}</p>
-        </span>
+              data-mode="${m.id}" style="background:${m.color}">
+        <span class="emoji">${locked ? "🔒" : m.emoji}</span>
+        <h3>${m.name}</h3>
+        <p>${m.blurb}</p>
         ${locked ? '<span class="badge18">🔒 Premium</span>'
                  : (m.adult ? '<span class="badge18">18+</span>' : "")}
       </button>`;
@@ -756,7 +754,7 @@ function fmtDate(ms) {
    SUMMARY
    =========================================================== */
 export function SummaryScreen(ctx) {
-  ctx.setTheme("#FFD100", "#c9a600");
+  ctx.setTheme("#ffd43b", "#f0b400");
   const { state } = ctx;
   const ranked = state.players.slice().sort((a, b) => b.sips - a.sips);
   const topSips = ranked[0]?.sips || 0;
@@ -1188,7 +1186,7 @@ export function CheckoutConsentModal(ctx, tier) {
    LOGIN / SIGNUP / FORGOT / RESET
    =========================================================== */
 export function LoginScreen(ctx, initialMode = "login") {
-  ctx.setTheme("#FFD100", "#c9a600");
+  ctx.setTheme("#ff6b6b", "#e84b4b");
   let mode = initialMode;
 
   const node = el(`
@@ -1425,7 +1423,7 @@ function _authErr(msg) {
    Cards are scoped to the currently selected mode + difficulty.
    =========================================================== */
 export function CustomCardsScreen(ctx) {
-  ctx.setTheme("#FFD100", "#c9a600");
+  ctx.setTheme("#ff6b6b", "#e84b4b");
   const { state } = ctx;
   const modeName  = MODES[state.mode]?.name || "Klasično";
   const diffName  = DIFFICULTIES[state.difficulty]?.name || "Lahko";

@@ -1,4 +1,4 @@
-const CACHE = 'na-zdravje-v39';
+const CACHE = 'na-zdravje-v40';
 const PRECACHE = [
   '/index.html',
   '/landing.html',
@@ -14,8 +14,6 @@ const PRECACHE = [
   '/fonts/fredoka-latin-ext.woff2',
   '/fonts/baloo2-latin.woff2',
   '/fonts/baloo2-latin-ext.woff2',
-  '/fonts/bangers-latin-400-normal.woff2',
-  '/fonts/poppins-latin-400-normal.woff',
   '/js/app.js',
   '/js/state.js',
   '/js/screens.js',
