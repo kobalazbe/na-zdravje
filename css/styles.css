@@ -143,19 +143,18 @@ body {
 .logo .cheer { display: block; font-size: 0.5em; color: var(--grape); margin-top: .35em; letter-spacing: 2px; }
 .subtitle { text-align: center; color: var(--ink-soft); font-size: 1.05rem; margin-top: 14px; }
 
-/* image logo (design-system PNG). The export has a baked white background,
-   so we frame it as a rounded sticker tile that sits on the light bg. */
+/* image logo (design-system PNG). It's a transparent die-cut sticker with its
+   own white outline, so we let it float directly on the bg with a soft
+   drop-shadow that follows the sticker shape — no tile framing. */
 .brand-logo {
   display: block;
   width: min(66vw, 250px);
   aspect-ratio: 3 / 2;
   object-fit: contain;
   margin: 0 auto;
-  background: #fff;
-  border-radius: 22px;
-  box-shadow: var(--shadow-soft);
+  filter: drop-shadow(0 8px 16px rgba(43,33,64,.22));
 }
-.brand-logo.sm { width: 120px; aspect-ratio: 3 / 2; border-radius: 14px; }
+.brand-logo.sm { width: 120px; aspect-ratio: 3 / 2; }
 .section-title { font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; text-align: center; }
 .hint { color: var(--ink-soft); font-size: .92rem; text-align: center; }
 .hint a { color: inherit; text-decoration: underline; }
