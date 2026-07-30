@@ -10,6 +10,10 @@
    methods, so screens won't need to change.
    =========================================================== */
 
+/* Launch promo: everything is free. Flip to false to restore the paid model —
+   all paywall/Stripe code stays intact and re-activates on its own. */
+const FREE_LAUNCH_MODE = true;
+
 const KEY = "naZdravje.ent.v1";
 const PASS_HOURS = 48;
 const GRACE_MS = 7 * 24 * 60 * 60 * 1000; // offline grace (Phase 1)
@@ -41,7 +45,10 @@ function persist() {
 
 /* ---------- public API ---------- */
 
+export function isFreeLaunch() { return FREE_LAUNCH_MODE; }
+
 export function isPremium() {
+  if (FREE_LAUNCH_MODE) return true;
   const now = Date.now();
   // premium: a null expiry = lifetime (redeem code / legacy); a dated expiry now lapses.
   if (ent.tier === "premium") return !ent.passExpiry || now < ent.passExpiry;

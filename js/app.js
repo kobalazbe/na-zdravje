@@ -185,6 +185,7 @@ const ctx = {
 
   // ---- monetization ----
   isPremium: entitlement.isPremium,
+  isFreeLaunch: entitlement.isFreeLaunch,
   getTier: entitlement.getTier,
   passHoursLeft: entitlement.passHoursLeft,
   paidUntil: entitlement.paidUntil,

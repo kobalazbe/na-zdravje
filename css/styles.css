@@ -812,6 +812,43 @@ body {
 }
 .premium-status .ps-refresh:hover { background: rgba(255,255,255,.4); }
 
+/* ---- free-launch promo (temporary: FREE_LAUNCH_MODE in entitlement.js) ---- */
+.launch-status, .launch-strip {
+  display: flex; align-items: center; gap: 10px;
+  background: linear-gradient(135deg, #f06595 0%, #845ef7 55%, #4dabf7 100%);
+  border-radius: var(--radius); padding: 12px 16px;
+  box-shadow: 0 4px 18px rgba(132, 94, 247, .38);
+}
+.launch-strip {
+  justify-content: center; gap: 7px;
+  padding: 6px 12px; margin: 0 0 8px; border-radius: 999px;
+}
+.launch-strip b {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: .82rem; color: #fff; letter-spacing: .02em;
+}
+.launch-strip .ls-spark { font-size: 1rem; }
+.launch-status .ps-text { flex: 1; }
+.launch-status .ps-title {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: 1rem; color: #fff; letter-spacing: .02em;
+}
+.launch-status .ps-sub {
+  font-size: .78rem; color: rgba(255,255,255,.9);
+  font-weight: 600; margin-top: 2px; line-height: 1.35;
+}
+.ls-spark {
+  font-size: 1.7rem; line-height: 1;
+  animation: ls-pop 1.8s ease-in-out infinite;
+}
+@keyframes ls-pop {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50%      { transform: scale(1.18) rotate(-8deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ls-spark { animation: none; }
+}
+
 /* premium crown chip in game header */
 .premium-chip {
   font-size: .72rem; font-weight: 800; font-family: var(--font-display);

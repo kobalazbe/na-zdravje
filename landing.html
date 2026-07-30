@@ -14,6 +14,15 @@
 <body>
 
   <!-- =====================================================
+       0. LAUNCH BANNER — temporary free-launch promo.
+       Remove together with FREE_LAUNCH_MODE in js/entitlement.js
+       ===================================================== -->
+  <div class="launch-banner">
+    <span class="lb-spark">🎉</span>
+    <span class="lb-text"><b>Ob zagonu je vse BREZPLAČNO</b> — Pikantno, vse težavnosti, vse karte. Omejena ponudba.</span>
+  </div>
+
+  <!-- =====================================================
        1. HERO — 2-col: headline + phone mockup
        ===================================================== -->
   <header class="hero">
@@ -250,10 +259,10 @@
   <section class="dark-banner">
     <div class="dark-inner">
       <div class="dark-left">
-        <span class="dark-eyebrow">18+ · Premium</span>
+        <span class="dark-eyebrow">18+ · Zdaj brezplačno</span>
         <h2 class="dark-title">Pikantno 🌶️<br>za odrasle glave.</h2>
-        <p class="dark-desc">Drznejše in flirtavo — okusno, ne vulgarno. Odklenite pikantni način za nepozabne momente.</p>
-        <a href="index.html" class="btn dark-btn">Odkleni Pikantno →</a>
+        <p class="dark-desc">Drznejše in flirtavo — okusno, ne vulgarno. Ob zagonu je pikantni način brezplačno odklenjen za vse.</p>
+        <a href="index.html" class="btn dark-btn">Igraj Pikantno →</a>
       </div>
       <div class="dark-right">
         <div class="dark-features">
@@ -281,7 +290,7 @@
           <div class="dark-feat">
             <span class="dark-feat-ico">👑</span>
             <div>
-              <strong>Premium vsebina</strong>
+              <strong>Vse vključeno</strong>
               <p>50+ ekskluzivnih kart</p>
             </div>
           </div>
@@ -365,9 +374,28 @@
        ===================================================== -->
   <section class="feat-section l-tint">
     <div class="l-section">
-      <h2 class="l-title reveal">Preprosto cenovanje.</h2>
-      <p class="l-sub reveal">Začni brezplačno. Odkleni vse za eno noč ali za vedno.</p>
+      <h2 class="l-title reveal">Trenutno popolnoma brezplačno 🎉</h2>
+      <p class="l-sub reveal">Brez plačila, brez kartice, brez skritih stroškov.</p>
 
+      <div class="free-panel reveal">
+        <span class="fp-badge">Omejena ponudba ob zagonu</span>
+        <div class="fp-price">0 €</div>
+        <p class="fp-desc">Vse funkcije so odklenjene za vse igralce — dokler traja lansirna ponudba.</p>
+        <ul class="fp-feats">
+          <li>✅ Pikantni način 🌶️</li>
+          <li>✅ Vse tri težavnosti</li>
+          <li>✅ Celotna knjižnica kart</li>
+          <li>✅ Brez kreditne kartice</li>
+        </ul>
+        <a href="index.html" class="btn btn-grape fp-cta">Igraj zdaj →</a>
+        <p class="fp-note">Premium pakete uvajamo šele kasneje — o tem te obvestimo vnaprej.</p>
+      </div>
+
+      <!-- ==========================================================
+           CENIK — začasno skrit med brezplačnim zagonom. Ob ponovni
+           uvedbi plačil odkomentiraj in v js/entitlement.js nastavi
+           FREE_LAUNCH_MODE = false.
+           ==========================================================
       <div class="pricing-grid">
         <div class="tier-card reveal-child" style="--delay:0ms">
           <span class="tier-emoji">🎟️</span>
@@ -411,6 +439,7 @@
       </div>
 
       <p class="pricing-note reveal">💡 Brezplačna verzija vključuje klasični način z 15 kartami na težavnost — brez kreditne kartice.</p>
+           ========================================================== -->
     </div>
   </section>
 
@@ -450,7 +479,7 @@
             <span class="faq-icon">+</span>
           </button>
           <div class="faq-a">
-            <p>Ja! Klasični način z vsemi 3 težavnostmi je popolnoma brezplačen. Premium odklene pikantni način in 100+ kart. Brez skritih stroškov.</p>
+            <p>Ja — in trenutno je brezplačno čisto <b>vse</b>: klasični in pikantni način, vse 3 težavnosti in celotna knjižnica 100+ kart. Gre za omejeno ponudbo ob zagonu, brez kartice in brez skritih stroškov.</p>
           </div>
         </div>
 
@@ -547,7 +576,7 @@
       <nav class="footer-col">
         <span class="footer-col-title">Info</span>
         <a href="#faq">Pogosta vprašanja</a>
-        <a href="index.html">Premium</a>
+        <a href="index.html">Igraj brezplačno</a>
       </nav>
       <nav class="footer-col">
         <span class="footer-col-title">Pravno</span>

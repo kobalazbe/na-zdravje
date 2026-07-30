@@ -41,7 +41,15 @@ export function HomeScreen(ctx) {
     ? `Žur Pass · še ${hrs} h`
     : (paidUntil ? `Premium · velja do ${fmtDate(paidUntil)}` : "Premium aktiven");
 
-  const premiumBlock = premium
+  const premiumBlock = ctx.isFreeLaunch()
+    ? `<div class="launch-status">
+        <span class="ls-spark">🎉</span>
+        <div class="ps-text">
+          <div class="ps-title">Vse je BREZPLAČNO!</div>
+          <div class="ps-sub">Pikantno · vse težavnosti · 100+ kart<br>Omejena ponudba ob zagonu 🚀</div>
+        </div>
+       </div>`
+    : premium
     ? `<div class="premium-status">
         <span class="ps-crown">${hrs ? "🎟️" : "👑"}</span>
         <div class="ps-text">
@@ -188,6 +196,11 @@ export function ModeScreen(ctx) {
         <h2 class="section-title">Izberi način</h2>
       </div>
 
+      ${ctx.isFreeLaunch() ? `<div class="launch-strip">
+        <span class="ls-spark">🎉</span>
+        <b>Vse odklenjeno — BREZPLAČNO</b>
+      </div>` : ""}
+
       <div class="choice-grid" id="modeGrid"></div>
 
       <p class="section-title" style="font-size:1.05rem;margin:12px 0 6px">Težavnost</p>
@@ -224,7 +237,7 @@ export function ModeScreen(ctx) {
         <h3>${m.name}</h3>
         <p>${m.blurb}</p>
         ${locked ? '<span class="badge18">🔒 Premium</span>'
-                 : (m.adult ? '<span class="badge18">18+</span>' : "")}
+                 : (m.adult ? `<span class="badge18">${ctx.isFreeLaunch() ? "18+ · 🎁 Brezplačno" : "18+"}</span>` : "")}
       </button>`;
     }).join("");
     modeGrid.querySelectorAll("[data-mode]").forEach((b) => {
@@ -491,7 +504,7 @@ export function GameScreen(ctx) {
       <div class="game-head">
         <button class="btn icon-btn btn-ghost" data-act="settings" aria-label="Nastavitve">⚙️</button>
         <div>
-          <div class="turn-label">${mode.emoji} ${mode.name} • ${diff.name}${ctx.isPremium() ? '<span class="premium-chip">👑 PRO</span>' : ""}</div>
+          <div class="turn-label">${mode.emoji} ${mode.name} • ${diff.name}${ctx.isPremium() ? `<span class="premium-chip">${ctx.isFreeLaunch() ? "🎉 BREZPLAČNO" : "👑 PRO"}</span>` : ""}</div>
           <div class="turn-name" id="turnName"></div>
         </div>
         <span class="round" id="roundLabel"></span>
