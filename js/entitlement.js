@@ -10,8 +10,27 @@
    methods, so screens won't need to change.
    =========================================================== */
 
-/* Launch promo: everything is free. Flip to false to restore the paid model —
-   all paywall/Stripe code stays intact and re-activates on its own. */
+/* Launch promo: everything is free. All paywall/Stripe code is left intact and
+   re-activates on its own when this flips, but the flag alone is NOT the whole
+   revert — the marketing copy does not revert with it.
+
+   FULL REVERT CHECKLIST (do all of these together):
+     1. FREE_LAUNCH_MODE = false  (here) — restores locks, teasers, paywall.
+     2. state.js PRICING — links are still Stripe *TEST* links. Swap them for
+        live ones first, or the restored buy buttons take no real money.
+     3. landing.html — uncomment the "CENIK" block, then DELETE the
+        `.free-panel` (0 €) block and the `.launch-banner` at the top of
+        <body>; both sit OUTSIDE the comment and would otherwise render
+        alongside the restored price cards.
+     4. landing.html — these were edited in place and stay wrong until hand-
+        reverted: `.dark-eyebrow` ("18+ · Zdaj brezplačno"), `.dark-desc`,
+        the `.dark-btn` label, the "Vse vključeno" `.dark-feat`, the pricing
+        `.l-title`/`.l-sub`, the "Je igra resnično brezplačna?" FAQ answer,
+        and the footer "Igraj brezplačno" link.
+     5. terms.html — uncomment the payment block, renumber sections back, and
+        restore §2 to mention Premium content (it was reworded in place).
+     6. sw.js — bump the cache version.
+*/
 const FREE_LAUNCH_MODE = true;
 
 const KEY = "naZdravje.ent.v1";

@@ -63,6 +63,16 @@ colors live in the `MODES`/`DIFFICULTIES` maps in `state.js`, not in CSS.
 
 ### Monetization (freemium, Phase 0 = client-only)
 
+> **Currently in FREE LAUNCH MODE.** `FREE_LAUNCH_MODE = true` at the top of
+> `js/entitlement.js` makes `isPremium()` return `true` unconditionally, so
+> everything below still describes the wiring accurately but **none of the gating
+> is active right now** — Pikantno is unlocked, deck caps and teaser cards are off,
+> and every paywall trigger is unreachable. `isFreeLaunch()` (also on `ctx`) drives
+> the "brezplačno" promo copy on Home, Mode select and the landing page. Reverting
+> to the paid model is more than flipping the flag: follow the full checklist in the
+> comment above `FREE_LAUNCH_MODE`, since the marketing copy does not revert with it
+> and `PRICING` still holds Stripe **test** links.
+
 `js/entitlement.js` owns premium access under its **own** localStorage key
 (`naZdravje.ent.v1`) so the in-game reset never wipes a purchase. Tier is `free` |
 `premium` | `pass` (`pass` = time-boxed Žur Pass). **Gating everywhere keys off
