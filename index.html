@@ -7,6 +7,12 @@
   <meta name="description" content="Na Zdravje! — digitalna pivska igra za 2–10 igralcev. Ena naprava, kup smeha." />
   <title>Na Zdravje! 🍻 — Pivska igra</title>
 
+  <!-- app shell has no server-rendered content (SPA) — keep search traffic on
+       the real marketing page (landing.html, served at "/") instead of
+       indexing this empty div. Still crawlable/followable for link equity. -->
+  <meta name="robots" content="noindex, follow" />
+  <link rel="canonical" href="https://nazdravje.top/" />
+
   <!-- social share card (the game link itself also gets shared directly) -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Na Zdravje!" />
@@ -26,7 +32,9 @@
   <link rel="stylesheet" href="css/fonts.css" />
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <link rel="apple-touch-icon" id="ati" href="" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/img/favicon.png" />
+  <link rel="apple-touch-icon" href="/img/favicon.png" />
 
   <!-- Vercel Web Analytics: cookieless, no personal data, no consent banner
        needed. Vercel is already a documented processor (see privacy.html).
@@ -57,30 +65,9 @@
   <canvas id="confetti" aria-hidden="true"></canvas>
 
   <script>
-    (function () {
-      try {
-        var c = document.createElement('canvas');
-        c.width = c.height = 192;
-        var x = c.getContext('2d');
-        var r = 40;
-        x.fillStyle = '#ff6b6b';
-        x.beginPath();
-        x.moveTo(r, 0); x.lineTo(192 - r, 0);
-        x.arcTo(192, 0, 192, r, r); x.lineTo(192, 192 - r);
-        x.arcTo(192, 192, 192 - r, 192, r); x.lineTo(r, 192);
-        x.arcTo(0, 192, 0, 192 - r, r); x.lineTo(0, r);
-        x.arcTo(0, 0, r, 0, r);
-        x.closePath(); x.fill();
-        x.font = '120px serif';
-        x.textAlign = 'center';
-        x.textBaseline = 'middle';
-        x.fillText('🍻', 96, 100);
-        document.getElementById('ati').href = c.toDataURL();
-      } catch (e) { /* ignore */ }
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js');
-      }
-    })();
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
   </script>
   <script type="module" src="js/app.js"></script>
 </body>

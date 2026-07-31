@@ -116,29 +116,6 @@ new IntersectionObserver(entries => {
   else clearInterval(cardTimer);
 }, { threshold: 0.1 }).observe(cardSection);
 
-// ---- Apple touch icon via Canvas ----
-(function () {
-  try {
-    const c = document.createElement('canvas');
-    c.width = c.height = 192;
-    const x = c.getContext('2d');
-    const r = 40;
-    x.fillStyle = '#ff6b6b';
-    x.beginPath();
-    x.moveTo(r,0); x.lineTo(192-r,0);
-    x.arcTo(192,0,192,r,r); x.lineTo(192,192-r);
-    x.arcTo(192,192,192-r,192,r); x.lineTo(r,192);
-    x.arcTo(0,192,0,192-r,r); x.lineTo(0,r);
-    x.arcTo(0,0,r,0,r); x.closePath(); x.fill();
-    x.font = '120px serif';
-    x.textAlign = 'center';
-    x.textBaseline = 'middle';
-    x.fillText('🍻', 96, 100);
-    const link = document.getElementById('ati');
-    if (link) link.href = c.toDataURL();
-  } catch(e) {}
-})();
-
 // ---- PWA install ----
 let deferredPrompt = null;
 const installBtn  = document.getElementById('installBtn');

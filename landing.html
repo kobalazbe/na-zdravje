@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#ff6b6b" />
-  <meta name="description" content="Na Zdravje! — digitalna pivska igra za 2–10 igralcev. Ena naprava, kup smeha. Brezplačno, brez prijave." />
-  <title>Na Zdravje! 🍻 — Digitalna pivska igra</title>
+  <meta name="description" content="Na Zdravje! — digitalna pivska igra za žur s prijatelji. 2–10 igralcev, ena naprava, 700+ kart. Trenutno VSE brezplačno — omejena ponudba. Igraj zdaj!" />
+  <title>Na Zdravje! 🍻 — Digitalna pivska igra za žur</title>
   <link rel="canonical" href="https://nazdravje.top/" />
 
   <!-- social share card (link preview in WhatsApp / Instagram / Facebook) -->
@@ -24,7 +24,9 @@
   <meta name="twitter:description" content="Vprašanja, izzivi in skupinske akcije na enem telefonu. Trenutno vse brezplačno." />
   <meta name="twitter:image" content="https://nazdravje.top/img/og-cover.png" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <link rel="apple-touch-icon" id="ati" href="" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/img/favicon.png" />
+  <link rel="apple-touch-icon" href="/img/favicon.png" />
   <link rel="stylesheet" href="css/fonts.css" />
   <link rel="stylesheet" href="css/landing.css" />
 
@@ -32,6 +34,98 @@
        needed. Vercel is already a documented processor (see privacy.html).
        Returns 404 until Web Analytics is enabled in the Vercel dashboard. -->
   <script defer src="/_vercel/insights/script.js"></script>
+
+  <!-- structured data — ties the brand together across search + the real
+       social profiles, and lets Google/AI search lift the FAQ answers
+       verbatim. Keep FAQPage text in sync with the visible #faq section. -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Na Zdravje!",
+    "url": "https://nazdravje.top/",
+    "description": "Digitalna pivska igra za žur s prijatelji — 2–10 igralcev, eno napravo, 700+ kart.",
+    "inLanguage": "sl",
+    "sameAs": [
+      "https://www.instagram.com/nazdravjeapp/",
+      "https://www.tiktok.com/@na.zdravje"
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Na Zdravje!",
+    "url": "https://nazdravje.top/",
+    "applicationCategory": "GameApplication",
+    "operatingSystem": "Any (spletni brskalnik)",
+    "description": "Digitalna pivska igra za 2–10 igralcev na enem telefonu. Vprašanja, izzivi in skupinske akcije, 700+ kart, brez namestitve.",
+    "inLanguage": "sl",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "EUR"
+    },
+    "contentRating": "18+ za način Pikantno; klasični način primeren za vse"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Za koliko igralcev je igra?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Igra je zasnovana za 2 do 10 igralcev na eni napravi. Telefon kroži med igralci — vsak dobi karto na svojo vrsto."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Ali potrebujem internet?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Za zagon igre potrebuješ povezavo. Med igranjem pa se vse — igralci, napredek in nastavitve — shranjuje lokalno na tvoj telefon, zato lahko igro kadar koli zapreš in nadaljuješ točno tam, kjer ste ostali."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Je igra resnično brezplačna?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Ja — in trenutno je brezplačno čisto vse: klasični in pikantni način, vse 3 težavnosti in celotna knjižnica 700+ kart. Gre za omejeno ponudbo ob zagonu, brez kartice in brez skritih stroškov."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Kako dodam igro na domači zaslon?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "iPhone: Odpri igro v Safariju, pritisni gumb Skupna raba, nato \"Dodaj na začetni zaslon\". Android: Odpri igro v Chromu, meni, nato \"Dodaj na začetni zaslon\"."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Je igra primerna za vse?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Klasični način je zabaven za vse starosti. Pikantni način je namenjen polnoletnim (18+) in je zaklenjen za mladoletnike. Igrajte odgovorno."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Kakšna je razlika med načinoma igre?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Klasično — zabavna vprašanja in izzivi za vsako druščino, primerno za vse. Pikantno — drznejše in flirtavo vprašanja za odrasle, samo za pogumne ekipe."
+        }
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
 
@@ -501,7 +595,7 @@
             <span class="faq-icon">+</span>
           </button>
           <div class="faq-a">
-            <p>Ja — in trenutno je brezplačno čisto <b>vse</b>: klasični in pikantni način, vse 3 težavnosti in celotna knjižnica 100+ kart. Gre za omejeno ponudbo ob zagonu, brez kartice in brez skritih stroškov.</p>
+            <p>Ja — in trenutno je brezplačno čisto <b>vse</b>: klasični in pikantni način, vse 3 težavnosti in celotna knjižnica 700+ kart. Gre za omejeno ponudbo ob zagonu, brez kartice in brez skritih stroškov.</p>
           </div>
         </div>
 
@@ -624,7 +718,7 @@
     </div>
     <div class="footer-bottom">
       <p class="footer-notice">🔞 Igra je namenjena polnoletnim. Pij odgovorno.</p>
-      <p class="footer-copy">© 2025 Na Zdravje! — Narejena z ❤️ za boljše žure.</p>
+      <p class="footer-copy">© 2026 Na Zdravje! — Narejena z ❤️ za boljše žure.</p>
     </div>
   </footer>
 

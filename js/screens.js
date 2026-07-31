@@ -143,8 +143,8 @@ export function SetupScreen(ctx) {
   const nextBtn = node.querySelector("#nextBtn");
 
   function renderList() {
-    list.innerHTML = state.players.map((p) => `
-      <div class="player-row" data-id="${p.id}">
+    list.innerHTML = state.players.map((p, i) => `
+      <div class="player-row" data-id="${p.id}" style="animation-delay:${i * 0.05}s">
         ${avatar(p)}
         <span class="name">${esc(p.name)}</span>
         <button class="btn icon-btn btn-ghost" data-remove="${p.id}" aria-label="Odstrani">✕</button>
@@ -800,7 +800,7 @@ export function SummaryScreen(ctx) {
       <div class="stack" id="board">${rows}</div>
 
       <div class="panel" style="margin-top:18px;text-align:left">
-        ${supers.map((s) => `<p style="margin:6px 0">${s}</p>`).join("") || '<p class="hint">Brez statistike — naslednjič bolj pogumno! 😜</p>'}
+        ${supers.map((s, i) => `<p class="super-line" style="margin:6px 0;animation-delay:${i * 0.08}s">${s}</p>`).join("") || '<p class="hint">Brez statistike — naslednjič bolj pogumno! 😜</p>'}
       </div>
 
       ${ctx.isPremium() ? "" : `
@@ -900,7 +900,7 @@ export function GameSettingsModal(ctx) {
       <div class="big-emoji">⚙️</div>
       <h2>Nastavitve</h2>
       <div class="settings-row">
-        <span>📳 Stresi / nagni za razkritje</span>
+        <span>📳 Stresi/nagni telefon</span>
         <button class="toggle-btn ${shakeOn ? "on" : ""}" data-act="toggle-shake">
           ${shakeOn ? "Vključeno" : "Izključeno"}
         </button>
@@ -1227,8 +1227,8 @@ export function LoginScreen(ctx, initialMode = "login") {
           </label>
           <button class="btn btn-lg" id="auth-submit">Prijava</button>
           <p id="auth-err" class="hint" style="text-align:center;min-height:18px;font-weight:600"></p>
-          <button class="btn btn-ghost" id="auth-toggle">Nimaš računa? Registracija →</button>
-          <button class="btn-forgot" id="auth-forgot">Pozabljeno geslo?</button>
+          <button class="auth-link" id="auth-toggle">Nimaš računa? Registracija →</button>
+          <button class="auth-link" id="auth-forgot">Pozabljeno geslo?</button>
         </div>
       </div>
       <button class="btn-guest" id="auth-guest">🎲 Igraj kot gost</button>
